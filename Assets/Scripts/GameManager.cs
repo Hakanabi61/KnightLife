@@ -341,6 +341,7 @@ public class GameManager : MonoBehaviour
 
         // ✅ CRITICAL FIX: Save attack bar value BEFORE deactivating!
         float hitQuality = attackBar != null ? attackBar.value : defaultHitQuality;
+        hitQuality = Mathf.Clamp(hitQuality, 0f, 100f); // Ensure value is within valid range
         Debug.Log($"⚔️ Attack Bar Value: {hitQuality:F1}%");
 
         if (hitButton != null)

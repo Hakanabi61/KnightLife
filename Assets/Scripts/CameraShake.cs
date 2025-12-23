@@ -20,7 +20,7 @@ public class CameraShake : MonoBehaviour
         }
         else
         {
-            Destroy(this); // Only destroy the duplicate component, not the whole GameObject
+            Destroy(gameObject); // Destroy duplicate GameObject to maintain singleton
         }
     }
 
