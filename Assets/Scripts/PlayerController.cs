@@ -28,9 +28,63 @@ public class PlayerController : MonoBehaviour
         else
         {
             Debug.Log("✅ Animator gefunden:  " + animator.runtimeAnimatorController.name);
+            ValidateAnimatorParameters();
         }
 
         StartRunning();
+    }
+
+    void ValidateAnimatorParameters()
+    {
+        if (animator == null) return;
+
+        Debug.Log("🔍 === ANIMATOR PARAMETER VALIDATION ===");
+
+        bool allParametersExist = true;
+
+        // Check for required parameters
+        if (!HasParameter("isRunning", AnimatorControllerParameterType.Bool))
+        {
+            Debug.LogWarning("❌ Animator parameter 'isRunning' (Bool) is missing!");
+            allParametersExist = false;
+        }
+
+        if (!HasParameter("Attack", AnimatorControllerParameterType.Trigger))
+        {
+            Debug.LogWarning("❌ Animator parameter 'Attack' (Trigger) is missing!");
+            allParametersExist = false;
+        }
+
+        if (!HasParameter("AirSlash", AnimatorControllerParameterType.Trigger))
+        {
+            Debug.LogWarning("❌ Animator parameter 'AirSlash' (Trigger) is missing!");
+            allParametersExist = false;
+        }
+
+        if (allParametersExist)
+        {
+            Debug.Log("✅ All required animator parameters exist!");
+        }
+        else
+        {
+            Debug.LogWarning("⚠️ Some animator parameters are missing - animations may not work correctly!");
+        }
+
+        Debug.Log("🔍 === END OF ANIMATOR VALIDATION ===");
+    }
+
+    bool HasParameter(string paramName, AnimatorControllerParameterType paramType)
+    {
+        if (animator == null) return false;
+
+        foreach (AnimatorControllerParameter param in animator.parameters)
+        {
+            if (param.name == paramName && param.type == paramType)
+            {
+                return true;
+            }
+        }
+        return false;
     }
 
     void Update()
