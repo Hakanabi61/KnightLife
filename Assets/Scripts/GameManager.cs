@@ -50,6 +50,7 @@ public class GameManager : MonoBehaviour
 
     [Header("Kampf-Einstellungen")]
     public float barSpeed = 2f;
+    public float defaultHitQuality = 50f; // Default hit quality when attack bar is not available
 
     [Header("Enemy Animation Support")]
     public bool enableEnemyAnimations = false; // Can be enabled when enemy has Animator
@@ -167,11 +168,11 @@ public class GameManager : MonoBehaviour
         if (shopButton == null) { Debug.LogWarning("❌ shopButton is not connected!"); allConnected = false; }
         if (potionButton == null) { Debug.LogWarning("❌ potionButton is not connected!"); allConnected = false; }
 
-        // Audio
+        // Audio (non-critical - game will work without sounds)
         if (audioSource == null) { Debug.LogWarning("❌ audioSource is not connected!"); allConnected = false; }
-        if (hitSound == null) { Debug.LogWarning("⚠️ hitSound is not assigned!"); }
+        if (hitSound == null) { Debug.LogWarning("⚠️ hitSound is not assigned (non-critical)!"); }
         if (criticalHitSound == null) { Debug.LogWarning("⚠️ criticalHitSound is not assigned (will use hitSound)!"); }
-        if (winSound == null) { Debug.LogWarning("⚠️ winSound is not assigned!"); }
+        if (winSound == null) { Debug.LogWarning("⚠️ winSound is not assigned (non-critical)!"); }
 
         // Player references
         if (player == null) { Debug.LogWarning("❌ player is not connected!"); allConnected = false; }
@@ -339,7 +340,7 @@ public class GameManager : MonoBehaviour
         if (currentEnemy == null || playerStats == null) return;
 
         // ✅ CRITICAL FIX: Save attack bar value BEFORE deactivating!
-        float hitQuality = attackBar != null ? attackBar.value : 50f;
+        float hitQuality = attackBar != null ? attackBar.value : defaultHitQuality;
         Debug.Log($"⚔️ Attack Bar Value: {hitQuality:F1}%");
 
         if (hitButton != null)

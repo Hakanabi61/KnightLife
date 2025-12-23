@@ -14,6 +14,7 @@ public class BattleEffects : MonoBehaviour
     public GameObject criticalHitParticles;
     public GameObject hitParticles;
     public GameObject blockParticles;
+    public float particleEffectDuration = 2f; // How long particle effects last before being destroyed
 
     [Header("Flash Effects")]
     public Image flashImage;
@@ -43,7 +44,7 @@ public class BattleEffects : MonoBehaviour
         if (particles != null)
         {
             GameObject effect = Instantiate(particles, position, Quaternion.identity);
-            Destroy(effect, 2f);
+            Destroy(effect, particleEffectDuration);
         }
     }
 
