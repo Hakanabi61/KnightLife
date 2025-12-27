@@ -1,102 +1,86 @@
 using UnityEngine;
-using UnityEngine.UI;
+using System.Collections;
 
 public class CharacterStats : MonoBehaviour
 {
-    [Header("Status Werte")]
-    public string characterName = "Held";
+    [Header("Character Info")]
+    public string characterName = "Character";
     public int level = 1;
-    public int maxHP = 100;
-    public int currentHP;
 
+    [Header("Stats")]
+    public int maxHP = 100;
+    public int currentHP = 100;
     public int attack = 10;
     public int defense = 5;
-    public int luck = 5;
 
-    [Header("Inventar")]
+    [Header("Player Stats")]
     public int gold = 0;
-
-    [Header("Erfahrung (XP)")]
     public int currentXP = 0;
     public int maxXP = 100;
-    public int xpReward = 0;
 
-    [Header("UI")]
-    public Slider hpSlider;
+    [Header("Enemy Stats")]
+    public int xpReward = 50;
 
     void Start()
     {
-        // Lade gespeicherte Werte (falls vorhanden)
-        if (gameObject.CompareTag("Player"))
+        currentHP = maxHP;
+
+        if (CompareTag("Player") && GameManager.instance != null)
         {
-            int savedGold = PlayerPrefs. GetInt("Gold", -1);
-            if (savedGold >= 0) // Wurde schon mal gespeichert
-            {
-                gold = savedGold;
-                level = PlayerPrefs.GetInt("Level", level);
-                attack = PlayerPrefs.GetInt("Attack", attack);
-                defense = PlayerPrefs. GetInt("Defense", defense);
-                maxHP = PlayerPrefs.GetInt("MaxHP", maxHP);
-                currentXP = PlayerPrefs.GetInt("CurrentXP", currentXP);
-                maxXP = PlayerPrefs.GetInt("MaxXP", maxXP);
-                
-                // HP laden - aber nicht 0! 
-                int savedHP = PlayerPrefs.GetInt("CurrentHP", -1);
-                if (savedHP > 0)
-                {
-                    currentHP = savedHP;
-                }
-                else
-                {
-                    currentHP = maxHP; // Falls nichts gespeichert, voll heilen
-                }
-                
-                Debug.Log("📥 Stats geladen: Gold=" + gold + ", HP=" + currentHP + "/" + maxHP + ", ATK=" + attack);
-            }
-            else
-            {
-                // Erste Mal spielen - normale Werte
-                currentHP = maxHP;
-            }
+            GameManager.instance.UpdatePlayerHPText(currentHP, maxHP);
         }
-        else
-        {
-            // Gegner - normale Werte
-            currentHP = maxHP;
-        }
-        
-        UpdateHealthUI();
     }
 
-    public void TakeDamage(int dmg)
+    public void TakeDamage(int damage)
     {
-        int finalDamage = Mathf.Max(1, dmg - defense);
-        currentHP -= finalDamage;
-        if (currentHP < 0) currentHP = 0;
+        currentHP -= damage;
+        currentHP = Mathf.Max(0, currentHP);
 
-        UpdateHealthUI();
+        Animator animator = GetComponent<Animator>();
+        if (animator != null && currentHP > 0)
+        {
+            animator.SetTrigger("Hit");
+        }
 
-        if (currentHP <= 0) Die();
+        if (currentHP <= 0)
+        {
+            if (animator != null)
+            {
+                animator.SetTrigger("Death");
+            }
+
+            Die();
+        }
+
+        if (CompareTag("Player") && GameManager.instance != null)
+        {
+            GameManager.instance.UpdatePlayerHPText(currentHP, maxHP);
+        }
     }
 
     public void Heal(int amount)
     {
         currentHP += amount;
-        if (currentHP > maxHP) currentHP = maxHP;
-        UpdateHealthUI();
+        currentHP = Mathf.Min(currentHP, maxHP);
+
+        if (CompareTag("Player") && GameManager.instance != null)
+        {
+            GameManager.instance.UpdatePlayerHPText(currentHP, maxHP);
+        }
     }
 
     public void GainXP(int amount)
     {
-        currentXP += amount;
-        Debug.Log(characterName + " erhält " + amount + " XP!");
+        if (!CompareTag("Player")) return;
 
-        if (currentXP >= maxXP)
+        currentXP += amount;
+
+        while (currentXP >= maxXP)
         {
             LevelUp();
         }
 
-        if (gameObject.CompareTag("Player"))
+        if (GameManager.instance != null)
         {
             GameManager.instance.UpdateLevelUI(level, currentXP, maxXP);
         }
@@ -104,63 +88,57 @@ public class CharacterStats : MonoBehaviour
 
     void LevelUp()
     {
-        currentXP -= maxXP;
         level++;
-
-        maxXP = (int)(maxXP * 1.2f);
+        currentXP -= maxXP;
+        maxXP = (int)(maxXP * 1.5f);
 
         maxHP += 20;
         currentHP = maxHP;
         attack += 3;
-        defense += 1;
+        defense += 2;
 
-        Debug.Log("LEVEL UP! Jetzt Level " + level);
+        Debug.Log("🎉 LEVEL UP! Level " + level);
 
-        UpdateHealthUI();
-        if (gameObject.CompareTag("Player"))
+        if (GameManager.instance != null)
         {
-            GameManager.instance.UpdateLevelUI(level, currentXP, maxXP);
             GameManager.instance.ShowLevelUpEffect();
-        }
-    }
-
-    void UpdateHealthUI()
-    {
-        if (hpSlider != null) 
-        { 
-            hpSlider. maxValue = maxHP; 
-            hpSlider.value = currentHP; 
-        }
-        
-        if (gameObject.CompareTag("Player") && GameManager.instance != null) 
-        {
             GameManager.instance.UpdatePlayerHPText(currentHP, maxHP);
+            GameManager.instance.UpdateLevelUI(level, currentXP, maxXP);
         }
     }
 
-    public virtual void Die()
+    void Die()
     {
-        if (! gameObject.CompareTag("Player")) 
+        Debug.Log(characterName + " ist gestorben!");
+
+        if (!CompareTag("Player"))
         {
-            Destroy(gameObject);
+            StartCoroutine(FadeOutAndDestroy());
         }
     }
 
-    void OnApplicationQuit()
+    IEnumerator FadeOutAndDestroy()
     {
-        // Beim Beenden:  Gold speichern
-        if (gameObject.CompareTag("Player"))
+        // Warte 2 Sekunden (Death Animation)
+        yield return new WaitForSeconds(2.0f);
+
+        // Fade out über 1 Sekunde
+        SpriteRenderer sprite = GetComponent<SpriteRenderer>();
+        if (sprite != null)
         {
-            PlayerPrefs.SetInt("Gold", gold);
-            PlayerPrefs.SetInt("Level", level);
-            PlayerPrefs.SetInt("Attack", attack);
-            PlayerPrefs.SetInt("Defense", defense);
-            PlayerPrefs.SetInt("MaxHP", maxHP);
-            PlayerPrefs.SetInt("CurrentHP", currentHP);
-            PlayerPrefs.SetInt("CurrentXP", currentXP);
-            PlayerPrefs.SetInt("MaxXP", maxXP);
-            PlayerPrefs.Save();
-            Debug.Log("💾 Beim Beenden gespeichert: " + gold + " Gold");
+            float elapsed = 0f;
+            float fadeDuration = 1.0f;
+            Color originalColor = sprite.color;
+
+            while (elapsed < fadeDuration)
+            {
+                elapsed += Time.deltaTime;
+                float alpha = Mathf.Lerp(1f, 0f, elapsed / fadeDuration);
+                sprite.color = new Color(originalColor.r, originalColor.g, originalColor.b, alpha);
+                yield return null;
+            }
         }
+
+        Destroy(gameObject);
     }
 }

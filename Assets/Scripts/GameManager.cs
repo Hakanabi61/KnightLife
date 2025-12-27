@@ -6,6 +6,9 @@ public class GameManager : MonoBehaviour
 {
     public static GameManager instance;
 
+    [Header("Debug")]
+    public bool enableDebugLogs = false;
+
     [Header("Player Referenzen")]
     public PlayerController player;
     public CharacterStats playerStats;
@@ -50,13 +53,7 @@ public class GameManager : MonoBehaviour
 
     [Header("Kampf-Einstellungen")]
     public float barSpeed = 2f;
-    public float defaultHitQuality = 50f; // Default hit quality when attack bar is not available
-
-    [Header("Enemy Animation Support")]
-    public bool enableEnemyAnimations = false; // Can be enabled when enemy has Animator
-
-    [Header("Visual Effects")]
-    public bool enableVisualEffects = true; // Enable particle effects and screen shake
+    public float defaultHitQuality = 50f;
 
     [Header("Level Up Effect")]
     public GameObject levelUpEffect;
@@ -64,6 +61,9 @@ public class GameManager : MonoBehaviour
 
     [Header("Shop Items Referenz")]
     public ShopItem defaultHealingPotion;
+
+    [Header("Enemy Animations")]
+    public bool enableEnemyAnimations = true;
 
     private bool isBattling = false;
     private CharacterStats currentEnemy;
@@ -83,16 +83,21 @@ public class GameManager : MonoBehaviour
 
     void Start()
     {
+        // Performance Settings
+        Application.targetFrameRate = 60;
+        QualitySettings.vSyncCount = 0;
+
         if (audioSource == null) audioSource = GetComponent<AudioSource>();
         if (musicSource != null && !musicSource.isPlaying) musicSource.Play();
 
+        // Player finden
         if (player == null)
         {
             GameObject playerObj = GameObject.FindGameObjectWithTag("Player");
             if (playerObj != null)
             {
                 player = playerObj.GetComponent<PlayerController>();
-                Debug.Log("✅ Player gefunden:  " + playerObj.name);
+                if (enableDebugLogs) Debug.Log("✅ Player gefunden:  " + playerObj.name);
             }
             else
             {
@@ -100,6 +105,7 @@ public class GameManager : MonoBehaviour
             }
         }
 
+        // PlayerStats finden
         if (playerStats == null)
         {
             GameObject playerObj = GameObject.FindGameObjectWithTag("Player");
@@ -116,6 +122,7 @@ public class GameManager : MonoBehaviour
             playerStats.gold = PlayerPrefs.GetInt("Gold", 0);
         }
 
+        // UI initialisieren
         if (storyPanel != null) storyPanel.SetActive(false);
         if (hitButton != null) hitButton.SetActive(false);
         if (attackBar != null) attackBar.gameObject.SetActive(false);
@@ -128,6 +135,9 @@ public class GameManager : MonoBehaviour
             potionButton.gameObject.SetActive(false);
         }
 
+        // UI Validierung
+        ValidateUIConnections();
+
         UpdateUI();
         UpdatePotionUI();
 
@@ -137,62 +147,24 @@ public class GameManager : MonoBehaviour
         }
 
         Invoke("UpdatePotionUI", 0.5f);
-
-        // Validate UI connections
-        ValidateUIConnections();
     }
 
     void ValidateUIConnections()
     {
-        Debug.Log("🔍 === UI CONNECTION VALIDATION ===");
-        
-        bool allConnected = true;
+        if (enableDebugLogs) Debug.Log("=== UI CONNECTION VALIDATION ===");
 
-        // Battle UI
-        if (battlePanel == null) { Debug.LogWarning("❌ battlePanel is not connected!"); allConnected = false; }
-        if (battleText == null) { Debug.LogWarning("❌ battleText is not connected!"); allConnected = false; }
-        if (enemyNameText == null) { Debug.LogWarning("❌ enemyNameText is not connected!"); allConnected = false; }
-        if (enemyHPBar == null) { Debug.LogWarning("❌ enemyHPBar is not connected!"); allConnected = false; }
-        if (attackBar == null) { Debug.LogWarning("❌ attackBar is not connected!"); allConnected = false; }
-        if (hitButton == null) { Debug.LogWarning("❌ hitButton is not connected!"); allConnected = false; }
+        if (playerHPText == null) Debug.LogWarning("❌ playerHPText is not connected!");
+        if (levelBar == null) Debug.LogWarning("❌ levelBar is not connected!");
+        if (battlePanel == null) Debug.LogWarning("❌ battlePanel is not connected!");
+        if (battleText == null) Debug.LogWarning("❌ battleText is not connected!");
+        if (criticalHitSound == null) Debug.LogWarning("⚠️ criticalHitSound is not assigned (will use hitSound)!");
 
-        // Player UI
-        if (hpText == null) { Debug.LogWarning("❌ hpText is not connected!"); allConnected = false; }
-        if (levelText == null) { Debug.LogWarning("❌ levelText is not connected!"); allConnected = false; }
-        if (goldText == null) { Debug.LogWarning("❌ goldText is not connected!"); allConnected = false; }
-        if (playerHPText == null) { Debug.LogWarning("❌ playerHPText is not connected!"); allConnected = false; }
-        if (levelBar == null) { Debug.LogWarning("❌ levelBar is not connected!"); allConnected = false; }
-
-        // Buttons
-        if (choiceButtons == null) { Debug.LogWarning("❌ choiceButtons is not connected!"); allConnected = false; }
-        if (shopButton == null) { Debug.LogWarning("❌ shopButton is not connected!"); allConnected = false; }
-        if (potionButton == null) { Debug.LogWarning("❌ potionButton is not connected!"); allConnected = false; }
-
-        // Audio (non-critical - game will work without sounds)
-        if (audioSource == null) { Debug.LogWarning("❌ audioSource is not connected!"); allConnected = false; }
-        if (hitSound == null) { Debug.LogWarning("⚠️ hitSound is not assigned (non-critical)!"); }
-        if (criticalHitSound == null) { Debug.LogWarning("⚠️ criticalHitSound is not assigned (will use hitSound)!"); }
-        if (winSound == null) { Debug.LogWarning("⚠️ winSound is not assigned (non-critical)!"); }
-
-        // Player references
-        if (player == null) { Debug.LogWarning("❌ player is not connected!"); allConnected = false; }
-        if (playerStats == null) { Debug.LogWarning("❌ playerStats is not connected!"); allConnected = false; }
-
-        if (allConnected)
-        {
-            Debug.Log("✅ All critical UI elements are connected!");
-        }
-        else
-        {
-            Debug.LogWarning("⚠️ Some UI elements are missing - check warnings above!");
-        }
-        
-        Debug.Log("🔍 === END OF VALIDATION ===");
+        if (enableDebugLogs) Debug.Log("=== END OF VALIDATION ===");
     }
 
     void Update()
     {
-        if (isBattling && attackBar != null)
+        if (isBattling && attackBar != null && attackBar.gameObject.activeSelf)
         {
             attackBar.value = Mathf.PingPong(Time.time * barSpeed * 100, 100);
         }
@@ -310,7 +282,7 @@ public class GameManager : MonoBehaviour
                 choiceButtons.transform.GetChild(i).gameObject.SetActive(true);
             }
 
-            Debug.Log("✅ ChoiceButtons aktiviert!");
+            if (enableDebugLogs) Debug.Log("✅ ChoiceButtons aktiviert!");
         }
         else
         {
@@ -339,89 +311,125 @@ public class GameManager : MonoBehaviour
     {
         if (currentEnemy == null || playerStats == null) return;
 
-        // ✅ CRITICAL FIX: Save attack bar value BEFORE deactivating!
-        float hitQuality = attackBar != null ? attackBar.value : defaultHitQuality;
-        hitQuality = Mathf.Clamp(hitQuality, 0f, 100f); // Ensure value is within valid range
-        Debug.Log($"⚔️ Attack Bar Value: {hitQuality:F1}%");
-
         if (hitButton != null)
         {
             hitButton.SetActive(false);
         }
 
+        // WICHTIG: Wert VORHER speichern!
+        float hitQuality = attackBar != null ? attackBar.value : defaultHitQuality;
+        hitQuality = Mathf.Clamp(hitQuality, 0f, 100f);
+
         if (attackBar != null)
         {
             attackBar.gameObject.SetActive(false);
         }
+
         int baseDamage = playerStats.attack;
 
-        bool isCritical = hitQuality >= 80f;
-        int finalDamage = (int)(baseDamage * (hitQuality / 100f));
-        finalDamage = Mathf.Max(1, finalDamage);
+        // ⚡ KRITISCHE ZONE:  40-60% = KRITISCH!  ⚡
+        bool isCritical = (hitQuality >= 40f && hitQuality <= 60f);
+
+        // Damage Berechnung
+        float damageMultiplier;
 
         if (isCritical)
         {
-            finalDamage = (int)(finalDamage * 1.5f);
-            Debug.Log($"💥 CRITICAL HIT! Base: {baseDamage}, Quality: {hitQuality:F1}%, Final: {finalDamage}");
+            // KRITISCH: 40-60% = 2x Schaden! 
+            damageMultiplier = 2.0f;
+        }
+        else if (hitQuality >= 25f && hitQuality <= 75f)
+        {
+            // Normal: 25-75% = 1x Schaden
+            damageMultiplier = 1.0f;
         }
         else
         {
-            Debug.Log($"⚔️ Normal Hit - Base: {baseDamage}, Quality: {hitQuality:F1}%, Final: {finalDamage}");
+            // Schwach: 0-25% oder 75-100% = 0. 5x Schaden
+            damageMultiplier = 0.5f;
         }
 
+        int finalDamage = (int)(baseDamage * damageMultiplier);
+        finalDamage = Mathf.Max(1, finalDamage);
+
+        // Animation
         if (player != null)
         {
             Animator animator = player.GetComponent<Animator>();
 
             if (isCritical)
             {
+                // KRITISCH = ComboAttack
                 if (animator != null)
                 {
-                    animator.SetTrigger("AirSlash");
-                    Debug.Log("⚡ AirSlash Animation triggered!");
+                    animator.SetTrigger("ComboAttack");
+                    if (enableDebugLogs) Debug.Log("💥 ComboAttack Animation!");
                 }
             }
             else
             {
-                player.PlayAttackAnimation();
+                // Normal/Schwach = AirSlash
+                if (animator != null)
+                {
+                    animator.SetTrigger("AirSlash");
+                    if (enableDebugLogs) Debug.Log("⚔️ AirSlash Animation!");
+                }
             }
         }
 
+        // Battle Text
         if (isCritical)
         {
-            ShowBattleText("💥 KRITISCH! " + finalDamage + " Schaden!");
-            
-            // Play critical hit sound effect
-            if (audioSource != null && criticalHitSound != null)
-            {
-                audioSource.PlayOneShot(criticalHitSound);
-            }
-            else if (audioSource != null && hitSound != null)
-            {
-                // Fallback to normal hit sound if critical sound not set
-                audioSource.PlayOneShot(hitSound, 1.5f); // Louder volume for critical
-            }
-
-            // Trigger visual effects for critical hit
-            if (enableVisualEffects && BattleEffects.instance != null && currentEnemy != null)
-            {
-                BattleEffects.instance.CriticalHitEffect(currentEnemy.transform.position);
-            }
+            ShowBattleText("💥 KRITISCH! " + finalDamage + " Schaden!  (Perfect:  " + hitQuality.ToString("F0") + "%)");
+        }
+        else if (damageMultiplier < 1f)
+        {
+            ShowBattleText("😞 Schwacher Treffer...  " + finalDamage + " Schaden");
         }
         else
         {
             ShowBattleText("Du triffst für " + finalDamage + " Schaden!");
-            
-            if (audioSource != null && hitSound != null)
+        }
+
+        // Sound
+        if (audioSource != null)
+        {
+            if (isCritical && criticalHitSound != null)
+            {
+                audioSource.PlayOneShot(criticalHitSound);
+            }
+            else if (hitSound != null)
             {
                 audioSource.PlayOneShot(hitSound);
             }
+        }
 
-            // Trigger visual effects for normal hit
-            if (enableVisualEffects && BattleEffects.instance != null && currentEnemy != null)
+        // Camera Shake
+        if (isCritical && CameraShake.instance != null)
+        {
+            CameraShake.instance.CriticalHitShake();
+        }
+
+        // ✨ VISUAL EFFECTS ✨
+        if (BattleEffects.instance != null && currentEnemy != null)
+        {
+            Vector3 effectPosition = currentEnemy.transform.position;
+
+            if (isCritical)
             {
-                BattleEffects.instance.NormalHitEffect(currentEnemy.transform.position);
+                BattleEffects.instance.PlayCriticalHitEffect(effectPosition);
             }
+            else if (damageMultiplier < 1f)
+            {
+                BattleEffects.instance.PlayWeakHitEffect(effectPosition);
+            }
+            else
+            {
+                BattleEffects.instance.PlayNormalHitEffect(effectPosition);
+            }
+
+            // Enemy damage flash
+            BattleEffects.instance.PlayEnemyDamageEffect(currentEnemy.gameObject);
         }
 
         currentEnemy.TakeDamage(finalDamage);
@@ -450,37 +458,32 @@ public class GameManager : MonoBehaviour
     {
         if (currentEnemy == null || playerStats == null) return;
 
-        // Trigger enemy attack animation
-        if (enableEnemyAnimations && currentEnemy != null)
+        // Enemy Attack Animation
+        Animator enemyAnimator = currentEnemy.GetComponent<Animator>();
+        if (enemyAnimator != null)
         {
-            Animator enemyAnimator = currentEnemy.GetComponent<Animator>();
-            if (enemyAnimator != null)
-            {
-                enemyAnimator.SetTrigger("Attack");
-                Debug.Log("👹 Enemy attack animation triggered!");
-            }
+            enemyAnimator.SetTrigger("Attack");
         }
 
         int damage = Mathf.Max(1, currentEnemy.attack - playerStats.defense);
         playerStats.TakeDamage(damage);
 
         ShowBattleText(currentEnemy.characterName + " greift an!  -" + damage + " HP");
-        Debug.Log($"👹 Enemy attacks for {damage} damage!");
 
         if (audioSource != null && hitSound != null)
         {
             audioSource.PlayOneShot(hitSound);
         }
 
-        // Trigger damage visual effects
-        if (enableVisualEffects && BattleEffects.instance != null)
+        // Player damage effect
+        if (BattleEffects.instance != null && player != null)
         {
-            BattleEffects.instance.DamageTakenEffect();
+            BattleEffects.instance.PlayEnemyDamageEffect(player.gameObject);
         }
 
         if (playerStats.currentHP <= 0)
         {
-            Debug.Log("💀 Player besiegt!");
+            if (enableDebugLogs) Debug.Log("💀 Player besiegt!");
             ShowBattleText("Du wurdest besiegt!");
             Invoke("GameOver", 2f);
         }
@@ -492,8 +495,6 @@ public class GameManager : MonoBehaviour
 
     void PlayerTurnStart()
     {
-        Debug.Log("🎮 Player's turn started!");
-        
         if (hitButton != null)
         {
             hitButton.SetActive(true);
@@ -511,18 +512,6 @@ public class GameManager : MonoBehaviour
     void WinBattle()
     {
         ShowBattleText("Du hast gewonnen!");
-        Debug.Log("🎉 Battle won!");
-
-        // Trigger enemy death animation
-        if (enableEnemyAnimations && currentEnemy != null)
-        {
-            Animator enemyAnimator = currentEnemy.GetComponent<Animator>();
-            if (enemyAnimator != null)
-            {
-                enemyAnimator.SetTrigger("Death");
-                Debug.Log("💀 Enemy death animation triggered!");
-            }
-        }
 
         if (playerStats != null && currentEnemy != null)
         {
@@ -628,13 +617,13 @@ public class GameManager : MonoBehaviour
     {
         if (PlayerInventory.instance == null)
         {
-            Debug.Log("❌ Kein Inventar gefunden!");
+            if (enableDebugLogs) Debug.Log("❌ Kein Inventar gefunden!");
             return;
         }
 
         if (PlayerInventory.instance.potions.Count == 0)
         {
-            Debug.Log("❌ Keine Tränke vorhanden!");
+            if (enableDebugLogs) Debug.Log("❌ Keine Tränke vorhanden!");
             ShowBattleText("Keine Tränke!");
             return;
         }
@@ -680,15 +669,9 @@ public class GameManager : MonoBehaviour
             playerStats.TakeDamage(damage);
             ShowBattleText(currentEnemy.characterName + " greift an! -" + damage + " HP");
 
-            // Trigger damage visual effects
-            if (enableVisualEffects && BattleEffects.instance != null)
-            {
-                BattleEffects.instance.DamageTakenEffect();
-            }
-
             if (playerStats.currentHP <= 0)
             {
-                Debug.Log("💀 Player besiegt!");
+                if (enableDebugLogs) Debug.Log("💀 Player besiegt!");
                 ShowBattleText("Du wurdest besiegt!");
                 Invoke("GameOver", 2f);
             }
@@ -697,7 +680,7 @@ public class GameManager : MonoBehaviour
 
     void GameOver()
     {
-        Debug.Log("🎮 GAME OVER");
+        if (enableDebugLogs) Debug.Log("🎮 GAME OVER");
         UnityEngine.SceneManagement.SceneManager.LoadScene(
             UnityEngine.SceneManagement.SceneManager.GetActiveScene().name
         );

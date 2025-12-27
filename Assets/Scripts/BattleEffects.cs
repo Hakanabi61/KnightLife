@@ -1,26 +1,29 @@
 using UnityEngine;
-using UnityEngine.UI;
 using System.Collections;
 
 /// <summary>
-/// Helper script for visual battle effects
-/// Manages particle effects and visual feedback during combat
+/// Manages visual effects during battle (particles, screen flash, etc.)
 /// </summary>
 public class BattleEffects : MonoBehaviour
 {
     public static BattleEffects instance;
 
     [Header("Particle Effects")]
-    public GameObject criticalHitParticles;
-    public GameObject hitParticles;
-    public GameObject blockParticles;
-    public float particleEffectDuration = 2f; // How long particle effects last before being destroyed
+    public GameObject criticalHitParticle;
+    public GameObject normalHitParticle;
+    public GameObject weakHitParticle;
+    public float particleLifetime = 2f;
 
-    [Header("Flash Effects")]
-    public Image flashImage;
-    public Color criticalFlashColor = new Color(1f, 0.5f, 0f, 0.5f); // Orange
-    public Color normalHitColor = new Color(1f, 1f, 1f, 0.3f); // White
-    public Color damageFlashColor = new Color(1f, 0f, 0f, 0.4f); // Red
+    [Header("Screen Flash")]
+    public GameObject screenFlashPanel;
+    public float flashDuration = 0.2f;
+    public Color criticalFlashColor = new Color(1f, 0.84f, 0f, 0.5f); // Gold
+    public Color normalFlashColor = new Color(1f, 1f, 1f, 0.3f); // White
+    public Color weakFlashColor = new Color(0.5f, 0.5f, 0.5f, 0.2f); // Gray
+
+    [Header("Enemy Effects")]
+    public Color enemyDamageColor = Color.red;
+    public float enemyDamageDuration = 0.15f;
 
     void Awake()
     {
@@ -35,95 +38,96 @@ public class BattleEffects : MonoBehaviour
     }
 
     /// <summary>
-    /// Spawn particle effect at a position
+    /// Spawn particle effect at position
     /// </summary>
-    /// <param name="particles">The particle prefab to spawn</param>
-    /// <param name="position">World position to spawn at</param>
-    public void SpawnParticles(GameObject particles, Vector3 position)
+    public void SpawnParticle(GameObject particlePrefab, Vector3 position)
     {
-        if (particles != null)
+        if (particlePrefab != null)
         {
-            GameObject effect = Instantiate(particles, position, Quaternion.identity);
-            Destroy(effect, particleEffectDuration);
+            GameObject particle = Instantiate(particlePrefab, position, Quaternion.identity);
+            Destroy(particle, particleLifetime);
         }
     }
 
     /// <summary>
-    /// Flash the screen with a color
+    /// Critical hit effect (particles + flash)
     /// </summary>
-    /// <param name="color">Color to flash</param>
-    /// <param name="duration">How long the flash lasts</param>
-    public void FlashScreen(Color color, float duration = 0.2f)
+    public void PlayCriticalHitEffect(Vector3 position)
     {
-        if (flashImage != null)
-        {
-            StartCoroutine(DoFlash(color, duration));
-        }
-    }
-
-    private IEnumerator DoFlash(Color color, float duration)
-    {
-        if (flashImage == null) yield break;
-
-        flashImage.color = color;
-        flashImage.enabled = true;
-
-        float elapsed = 0f;
-        Color startColor = color;
-        Color endColor = new Color(color.r, color.g, color.b, 0f);
-
-        while (elapsed < duration)
-        {
-            elapsed += Time.deltaTime;
-            float t = elapsed / duration;
-            flashImage.color = Color.Lerp(startColor, endColor, t);
-            yield return null;
-        }
-
-        flashImage.enabled = false;
+        SpawnParticle(criticalHitParticle, position);
+        StartCoroutine(ScreenFlash(criticalFlashColor, flashDuration));
     }
 
     /// <summary>
-    /// Play critical hit effects
+    /// Normal hit effect
     /// </summary>
-    /// <param name="position">Position to spawn particles</param>
-    public void CriticalHitEffect(Vector3 position)
+    public void PlayNormalHitEffect(Vector3 position)
     {
-        FlashScreen(criticalFlashColor, 0.25f);
-        SpawnParticles(criticalHitParticles, position);
-
-        // Trigger camera shake if available
-        if (CameraShake.instance != null)
-        {
-            CameraShake.instance.CriticalHitShake();
-        }
-
-        Debug.Log("✨ Critical hit visual effect played!");
+        SpawnParticle(normalHitParticle, position);
+        StartCoroutine(ScreenFlash(normalFlashColor, flashDuration * 0.5f));
     }
 
     /// <summary>
-    /// Play normal hit effects
+    /// Weak hit effect
     /// </summary>
-    /// <param name="position">Position to spawn particles</param>
-    public void NormalHitEffect(Vector3 position)
+    public void PlayWeakHitEffect(Vector3 position)
     {
-        FlashScreen(normalHitColor, 0.15f);
-        SpawnParticles(hitParticles, position);
+        SpawnParticle(weakHitParticle, position);
+        // No screen flash for weak hits
     }
 
     /// <summary>
-    /// Play damage taken effects
+    /// Screen flash effect
     /// </summary>
-    public void DamageTakenEffect()
+    IEnumerator ScreenFlash(Color flashColor, float duration)
     {
-        FlashScreen(damageFlashColor, 0.2f);
-
-        // Trigger camera shake if available
-        if (CameraShake.instance != null)
+        if (screenFlashPanel != null)
         {
-            CameraShake.instance.PlayerDamageShake();
-        }
+            UnityEngine.UI.Image flashImage = screenFlashPanel.GetComponent<UnityEngine.UI.Image>();
+            if (flashImage != null)
+            {
+                screenFlashPanel.SetActive(true);
+                flashImage.color = flashColor;
 
-        Debug.Log("💔 Damage taken visual effect played!");
+                float elapsed = 0f;
+                Color startColor = flashColor;
+                Color endColor = new Color(flashColor.r, flashColor.g, flashColor.b, 0f);
+
+                while (elapsed < duration)
+                {
+                    elapsed += Time.deltaTime;
+                    float t = elapsed / duration;
+                    flashImage.color = Color.Lerp(startColor, endColor, t);
+                    yield return null;
+                }
+
+                screenFlashPanel.SetActive(false);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Enemy damage flash effect
+    /// </summary>
+    public void PlayEnemyDamageEffect(GameObject enemy)
+    {
+        if (enemy != null)
+        {
+            StartCoroutine(EnemyFlash(enemy));
+        }
+    }
+
+    IEnumerator EnemyFlash(GameObject enemy)
+    {
+        SpriteRenderer spriteRenderer = enemy.GetComponent<SpriteRenderer>();
+        if (spriteRenderer != null)
+        {
+            Color originalColor = spriteRenderer.color;
+            spriteRenderer.color = enemyDamageColor;
+
+            yield return new WaitForSeconds(enemyDamageDuration);
+
+            spriteRenderer.color = originalColor;
+        }
     }
 }

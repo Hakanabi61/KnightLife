@@ -136,15 +136,6 @@ public class PlayerController : MonoBehaviour
         Debug.Log("🛑 Player stoppt!");
     }
 
-    public void PlayAttackAnimation()
-    {
-        if (animator != null)
-        {
-            animator.SetTrigger("Attack");
-            Debug.Log("⚔️ Attack-Animation!");
-        }
-    }
-
     void OnTriggerEnter2D(Collider2D other)
     {
         if (other.CompareTag("Enemy"))
