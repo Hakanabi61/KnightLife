@@ -29,7 +29,9 @@ public class DungeonUIRuntime : MonoBehaviour
         EnsureCanvas();
         EnsurePanels();
 
-        // Demo: zeigt einmal den Encounter; sp�ter durch deine Logik ersetzen
+        // Smoke test: show a single Encounter on Start for verification
+        // The DungeonUIController should be used by DungeonManager to control UI in-game
+        Debug.Log("DungeonUIRuntime: Smoke test - showing encounter panel");
         _encounterView?.Show("GEGNER!", "Ein wilder Gegner erscheint!");
     }
 
