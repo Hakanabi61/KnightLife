@@ -833,4 +833,69 @@ public class DungeonManager : MonoBehaviour
 
         Debug.Log("================================================");
     }
+
+    // ============================================
+    // UI CONTROLLER INTEGRATION (SendMessage)
+    // ============================================
+    // These methods are called by DungeonUIController via SendMessage.
+    // They provide integration points for the new UI system.
+
+    /// <summary>
+    /// Called when player clicks Fight button on encounter panel.
+    /// </summary>
+    public void StartFight()
+    {
+        Debug.Log("⚔️ StartFight called from UI");
+        // TODO: Implement battle system integration
+        CompleteEncounter();
+    }
+
+    /// <summary>
+    /// Called when player clicks Flee button on encounter panel.
+    /// </summary>
+    public void TryFlee()
+    {
+        Debug.Log("🏃 TryFlee called from UI");
+        // TODO: Implement flee logic with success chance
+        CompleteEncounter();
+    }
+
+    /// <summary>
+    /// Called when player selects Shop from choice panel.
+    /// </summary>
+    public void OpenShop()
+    {
+        Debug.Log("🏪 OpenShop called from UI");
+        // TODO: Open shop UI
+        CompleteEncounter();
+    }
+
+    /// <summary>
+    /// Called when player selects Chest from choice panel.
+    /// </summary>
+    public void OpenChest()
+    {
+        Debug.Log("📦 OpenChest called from UI");
+        // TODO: Give items/gold
+        CompleteEncounter();
+    }
+
+    /// <summary>
+    /// Called when player selects Boss from choice panel.
+    /// </summary>
+    public void GoToBoss()
+    {
+        Debug.Log("👑 GoToBoss called from UI");
+        // TODO: Transition to boss encounter
+        CompleteEncounter();
+    }
+
+    /// <summary>
+    /// Called when player selects Continue from choice panel.
+    /// </summary>
+    public void ContinueExploration()
+    {
+        Debug.Log("🚶 ContinueExploration called from UI");
+        CompleteEncounter();
+    }
 }

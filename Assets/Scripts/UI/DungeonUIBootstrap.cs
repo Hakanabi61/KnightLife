@@ -29,7 +29,7 @@ public class DungeonUIRuntime : MonoBehaviour
         EnsureCanvas();
         EnsurePanels();
 
-        // Demo: zeigt einmal den Encounter; später durch deine Logik ersetzen
+        // Demo: zeigt einmal den Encounter; spï¿½ter durch deine Logik ersetzen
         _encounterView?.Show("GEGNER!", "Ein wilder Gegner erscheint!");
     }
 
@@ -77,6 +77,13 @@ public class DungeonUIRuntime : MonoBehaviour
     {
         _encounterView = EnsureEncounterPanel();
         _choiceView = EnsureChoicePanel();
+        // Provide to controller if present
+        var controller = Object.FindObjectOfType<DungeonUIController>();
+        if (controller)
+        {
+            controller.encounterView = _encounterView;
+            controller.choiceView = _choiceView;
+        }
     }
 
     EncounterPanelView EnsureEncounterPanel()
@@ -120,7 +127,7 @@ public class DungeonUIRuntime : MonoBehaviour
 
         if (view.fightButton == null)
         {
-            var fight = CreateButton("Button_Kämpfen", btnCont, "Kämpfen");
+            var fight = CreateButton("Button_Kï¿½mpfen", btnCont, "Kï¿½mpfen");
             view.fightButton = fight;
         }
         if (view.fleeButton == null)
@@ -150,7 +157,7 @@ public class DungeonUIRuntime : MonoBehaviour
 
         if (view.headerText == null)
         {
-            var header = CreateTMP("ChoiceTitleText", root.transform, "Wähle eine Option", 42, FontStyles.Bold);
+            var header = CreateTMP("ChoiceTitleText", root.transform, "Wï¿½hle eine Option", 42, FontStyles.Bold);
             var hrt = header.GetComponent<RectTransform>();
             hrt.anchorMin = new Vector2(0.05f, 0.75f);
             hrt.anchorMax = new Vector2(0.95f, 0.95f);
@@ -180,10 +187,10 @@ public class DungeonUIRuntime : MonoBehaviour
         var opts = new List<ChoiceOption>
         {
             new ChoiceOption{ label = "Shop", onSelect = new UnityEngine.Events.UnityEvent() },
-            new ChoiceOption{ label = "Truhe öffnen", onSelect = new UnityEngine.Events.UnityEvent() },
+            new ChoiceOption{ label = "Truhe ï¿½ffnen", onSelect = new UnityEngine.Events.UnityEvent() },
             new ChoiceOption{ label = "Weiter", onSelect = new UnityEngine.Events.UnityEvent() },
         };
-        view.Show("Wähle eine Option", opts);
+        view.Show("Wï¿½hle eine Option", opts);
         view.Hide();
 
         return view;
