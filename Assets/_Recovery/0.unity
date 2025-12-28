@@ -1459,9 +1459,6 @@ GameObject:
   - component: {fileID: 954120785}
   - component: {fileID: 954120787}
   - component: {fileID: 954120786}
-  - component: {fileID: 954120790}
-  - component: {fileID: 954120789}
-  - component: {fileID: 954120788}
   m_Layer: 5
   m_Name: ChoicePanel
   m_TagString: Untagged
@@ -1528,48 +1525,6 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 954120784}
   m_CullTransparentMesh: 1
---- !u!114 &954120788
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 954120784}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 46140488e54f1f147842dca04a54f686, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::ChoicePanelView
-  headerText: {fileID: 113236766}
-  buttonContainer: {fileID: 1840981722}
-  buttonPrefab: {fileID: 4949871781565627994, guid: cc5b53e76b3a85c47ad5dccf59f001f5, type: 3}
-  panelController: {fileID: 954120789}
---- !u!114 &954120789
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 954120784}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 2393cf5426e1b0244b4d78a903fba841, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::PanelController
-  startHidden: 1
-  fadeDuration: 0.15
---- !u!225 &954120790
-CanvasGroup:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 954120784}
-  m_Enabled: 1
-  m_Alpha: 1
-  m_Interactable: 1
-  m_BlocksRaycasts: 1
-  m_IgnoreParentGroups: 0
 --- !u!1 &976136381
 GameObject:
   m_ObjectHideFlags: 0
@@ -1581,11 +1536,6 @@ GameObject:
   - component: {fileID: 976136382}
   - component: {fileID: 976136384}
   - component: {fileID: 976136383}
-  - component: {fileID: 976136389}
-  - component: {fileID: 976136388}
-  - component: {fileID: 976136387}
-  - component: {fileID: 976136386}
-  - component: {fileID: 976136385}
   m_Layer: 5
   m_Name: EncounterPanel
   m_TagString: Untagged
@@ -1610,11 +1560,11 @@ RectTransform:
   - {fileID: 1692074975}
   m_Father: {fileID: 1289021313}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0.5, y: 0.5}
-  m_AnchorMax: {x: 0.5, y: 0.5}
+  m_AnchorMin: {x: 0.5, y: 0}
+  m_AnchorMax: {x: 0.5, y: 0}
   m_AnchoredPosition: {x: 0, y: 150}
   m_SizeDelta: {x: 900, y: 300}
-  m_Pivot: {x: 0.5, y: 0.5}
+  m_Pivot: {x: 0.5, y: 0}
 --- !u!114 &976136383
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1653,101 +1603,6 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 976136381}
   m_CullTransparentMesh: 1
---- !u!114 &976136385
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 976136381}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 306cc8c2b49d7114eaa3623786fc2126, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.LayoutElement
-  m_IgnoreLayout: 0
-  m_MinWidth: 900
-  m_MinHeight: 300
-  m_PreferredWidth: -1
-  m_PreferredHeight: -1
-  m_FlexibleWidth: -1
-  m_FlexibleHeight: -1
-  m_LayoutPriority: 1
---- !u!114 &976136386
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 976136381}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 59f8146938fff824cb5fd77236b75775, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.VerticalLayoutGroup
-  m_Padding:
-    m_Left: 0
-    m_Right: 0
-    m_Top: 0
-    m_Bottom: 0
-  m_ChildAlignment: 4
-  m_Spacing: 12
-  m_ChildForceExpandWidth: 1
-  m_ChildForceExpandHeight: 1
-  m_ChildControlWidth: 1
-  m_ChildControlHeight: 1
-  m_ChildScaleWidth: 0
-  m_ChildScaleHeight: 0
-  m_ReverseArrangement: 0
---- !u!114 &976136387
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 976136381}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a65c4777278149049acce94f49d196a5, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::EncounterPanelView
-  titleText: {fileID: 1712547970}
-  descriptionText: {fileID: 2127835747}
-  fightButton: {fileID: 17542468}
-  fleeButton: {fileID: 886429726}
-  panelController: {fileID: 976136388}
-  onFight:
-    m_PersistentCalls:
-      m_Calls: []
-  onFlee:
-    m_PersistentCalls:
-      m_Calls: []
---- !u!114 &976136388
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 976136381}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 2393cf5426e1b0244b4d78a903fba841, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::PanelController
-  startHidden: 1
-  fadeDuration: 0.15
---- !u!225 &976136389
-CanvasGroup:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 976136381}
-  m_Enabled: 1
-  m_Alpha: 1
-  m_Interactable: 1
-  m_BlocksRaycasts: 1
-  m_IgnoreParentGroups: 0
 --- !u!1 &1116877228
 GameObject:
   m_ObjectHideFlags: 0
@@ -2009,9 +1864,6 @@ GameObject:
   - component: {fileID: 1289021312}
   - component: {fileID: 1289021311}
   - component: {fileID: 1289021310}
-  - component: {fileID: 1289021316}
-  - component: {fileID: 1289021315}
-  - component: {fileID: 1289021314}
   m_Layer: 5
   m_Name: DungeonUI
   m_TagString: Untagged
@@ -2103,55 +1955,6 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0, y: 0}
---- !u!114 &1289021314
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1289021309}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 2393cf5426e1b0244b4d78a903fba841, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::PanelController
-  startHidden: 1
-  fadeDuration: 0.15
---- !u!225 &1289021315
-CanvasGroup:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1289021309}
-  m_Enabled: 1
-  m_Alpha: 1
-  m_Interactable: 1
-  m_BlocksRaycasts: 1
-  m_IgnoreParentGroups: 0
---- !u!114 &1289021316
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1289021309}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a65c4777278149049acce94f49d196a5, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::EncounterPanelView
-  titleText: {fileID: 0}
-  descriptionText: {fileID: 0}
-  fightButton: {fileID: 0}
-  fleeButton: {fileID: 0}
-  panelController: {fileID: 0}
-  onFight:
-    m_PersistentCalls:
-      m_Calls: []
-  onFlee:
-    m_PersistentCalls:
-      m_Calls: []
 --- !u!1 &1513116261
 GameObject:
   m_ObjectHideFlags: 0
@@ -2290,20 +2093,20 @@ MonoBehaviour:
   m_GameObject: {fileID: 1692074974}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 59f8146938fff824cb5fd77236b75775, type: 3}
+  m_Script: {fileID: 11500000, guid: 30649d3a9faa99c48a7b1166b86bf2a0, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.VerticalLayoutGroup
+  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.HorizontalLayoutGroup
   m_Padding:
     m_Left: 0
     m_Right: 0
     m_Top: 0
     m_Bottom: 0
   m_ChildAlignment: 4
-  m_Spacing: 16
+  m_Spacing: 20
   m_ChildForceExpandWidth: 1
   m_ChildForceExpandHeight: 1
-  m_ChildControlWidth: 1
-  m_ChildControlHeight: 1
+  m_ChildControlWidth: 0
+  m_ChildControlHeight: 0
   m_ChildScaleWidth: 0
   m_ChildScaleHeight: 0
   m_ReverseArrangement: 0
