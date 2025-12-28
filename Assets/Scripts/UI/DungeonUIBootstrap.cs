@@ -22,6 +22,7 @@ public class DungeonUIRuntime : MonoBehaviour
     RectTransform _safeArea;
     EncounterPanelView _encounterView;
     ChoicePanelView _choiceView;
+    DungeonUIController _controller;
 
     void Start()
     {
@@ -81,12 +82,13 @@ public class DungeonUIRuntime : MonoBehaviour
     {
         _encounterView = EnsureEncounterPanel();
         _choiceView = EnsureChoicePanel();
-        // Provide to controller if present
-        var controller = Object.FindObjectOfType<DungeonUIController>();
-        if (controller)
+        // Provide to controller if present (only search once)
+        if (_controller == null)
+            _controller = Object.FindObjectOfType<DungeonUIController>();
+        if (_controller)
         {
-            controller.encounterView = _encounterView;
-            controller.choiceView = _choiceView;
+            _controller.encounterView = _encounterView;
+            _controller.choiceView = _choiceView;
         }
     }
 

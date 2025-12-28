@@ -27,7 +27,8 @@ public class DungeonUIController : MonoBehaviour
     {
         if (!dungeonManagerTarget)
         {
-            // Try to find DungeonManager if not assigned
+            // Try to find DungeonManager if not assigned in inspector
+            // This is only called once during initialization, not every frame
             var dm = FindObjectOfType<DungeonManager>();
             if (dm) dungeonManagerTarget = dm.gameObject;
         }
