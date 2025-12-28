@@ -35,15 +35,10 @@ public class DungeonUIController : MonoBehaviour
 
     void Start()
     {
-        // Ensure the bootstrap has linked the views
+        // Views are auto-linked by DungeonUIBootstrap in its EnsurePanels method
         if (encounterView == null || choiceView == null)
         {
-            var runtime = FindObjectOfType<DungeonUIRuntime>();
-            if (runtime != null)
-            {
-                // Views should be auto-linked by bootstrap
-                Debug.Log("DungeonUIController: Waiting for bootstrap to link views");
-            }
+            Debug.LogWarning("DungeonUIController: Views not linked yet. Ensure DungeonUIBootstrap runs before this.");
         }
     }
 

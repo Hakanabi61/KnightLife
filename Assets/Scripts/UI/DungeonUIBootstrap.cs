@@ -66,7 +66,9 @@ public class DungeonUIRuntime : MonoBehaviour
         var saGo = GameObject.Find("SafeArea") ?? new GameObject("SafeArea");
         if (saGo.transform.parent != _canvas.transform)
             saGo.transform.SetParent(_canvas.transform, false);
-        _safeArea = saGo.AddComponent<RectTransform>();
+        _safeArea = saGo.GetComponent<RectTransform>();
+        if (_safeArea == null)
+            _safeArea = saGo.AddComponent<RectTransform>();
         if (saGo.GetComponent<SafeArea>() == null)
             saGo.AddComponent<SafeArea>();
         _safeArea.anchorMin = Vector2.zero;
