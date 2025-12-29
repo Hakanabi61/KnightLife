@@ -5,6 +5,7 @@ public class PlayerController : MonoBehaviour
     [Header("Einstellungen")]
     public float speed = 3.5f;
     public bool isRunning = true;
+    public bool isDungeonMode = false;
 
     [Header("Audio (Schritte)")]
     public AudioClip stepSound;
@@ -89,6 +90,21 @@ public class PlayerController : MonoBehaviour
 
     void Update()
     {
+        if (isDungeonMode)
+        {
+            // Stoppe jede Bewegung
+            if (rb != null)
+            {
+                rb.linearVelocity = Vector2.zero;
+            }
+
+            if (animator != null)
+            {
+                animator.SetBool("isRunning", false);
+            }
+
+            return; // Überspringe Rest
+        }
         if (isRunning)
         {
             // Bewegung nach rechts

@@ -1,34 +1,25 @@
 using UnityEngine;
-using System.Collections;
 
 public class CharacterStats : MonoBehaviour
 {
-    [Header("Character Info")]
+    [Header("Stats")]
     public string characterName = "Character";
     public int level = 1;
-
-    [Header("Stats")]
     public int maxHP = 100;
     public int currentHP = 100;
     public int attack = 10;
     public int defense = 5;
-
-    [Header("Player Stats")]
-    public int gold = 0;
     public int currentXP = 0;
-    public int maxXP = 100;
+    public int xpToNextLevel = 100;
 
-    [Header("Enemy Stats")]
-    public int xpReward = 50;
+    [Header("Rewards")]
+    public int xpReward = 25;
+    public int gold = 10;
 
     void Start()
     {
-        currentHP = maxHP;
-
-        if (CompareTag("Player") && GameManager.instance != null)
-        {
-            GameManager.instance.UpdatePlayerHPText(currentHP, maxHP);
-        }
+        // Sicherstellen dass HP nicht über Max ist
+        currentHP = Mathf.Min(currentHP, maxHP);
     }
 
     public void TakeDamage(int damage)
@@ -36,25 +27,17 @@ public class CharacterStats : MonoBehaviour
         currentHP -= damage;
         currentHP = Mathf.Max(0, currentHP);
 
-        Animator animator = GetComponent<Animator>();
-        if (animator != null && currentHP > 0)
+        Debug.Log($"{characterName} takes {damage} damage! HP:  {currentHP}/{maxHP}");
+
+        if (GameManager.instance != null)
         {
-            animator.SetTrigger("Hit");
+            GameManager.instance.UpdateUI();
         }
 
+        // Tod? 
         if (currentHP <= 0)
         {
-            if (animator != null)
-            {
-                animator.SetTrigger("Death");
-            }
-
             Die();
-        }
-
-        if (CompareTag("Player") && GameManager.instance != null)
-        {
-            GameManager.instance.UpdatePlayerHPText(currentHP, maxHP);
         }
     }
 
@@ -63,82 +46,61 @@ public class CharacterStats : MonoBehaviour
         currentHP += amount;
         currentHP = Mathf.Min(currentHP, maxHP);
 
-        if (CompareTag("Player") && GameManager.instance != null)
+        Debug.Log($"{characterName} heals {amount} HP! HP:  {currentHP}/{maxHP}");
+
+        if (GameManager.instance != null)
         {
-            GameManager.instance.UpdatePlayerHPText(currentHP, maxHP);
+            GameManager.instance.UpdateUI();
+        }
+    }
+
+    public void RestoreHP(int amount)
+    {
+        currentHP = Mathf.Min(currentHP + amount, maxHP);
+
+        if (GameManager.instance != null)
+        {
+            GameManager.instance.UpdateUI();
         }
     }
 
     public void GainXP(int amount)
     {
-        if (!CompareTag("Player")) return;
-
         currentXP += amount;
 
-        while (currentXP >= maxXP)
-        {
-            LevelUp();
-        }
+        Debug.Log($"{characterName} gains {amount} XP!");
 
         if (GameManager.instance != null)
         {
-            GameManager.instance.UpdateLevelUI(level, currentXP, maxXP);
+            GameManager.instance.UpdateUI();
         }
     }
 
-    void LevelUp()
+    public void LevelUp()
     {
         level++;
-        currentXP -= maxXP;
-        maxXP = (int)(maxXP * 1.5f);
-
-        maxHP += 20;
+        maxHP += 10;
         currentHP = maxHP;
-        attack += 3;
-        defense += 2;
+        attack += 2;
+        defense += 1;
 
-        Debug.Log("🎉 LEVEL UP! Level " + level);
+        Debug.Log($"🎉 {characterName} LEVEL UP!  Now Level {level}");
+        Debug.Log($"   HP: {maxHP} | ATK: {attack} | DEF: {defense}");
 
         if (GameManager.instance != null)
         {
-            GameManager.instance.ShowLevelUpEffect();
-            GameManager.instance.UpdatePlayerHPText(currentHP, maxHP);
-            GameManager.instance.UpdateLevelUI(level, currentXP, maxXP);
+            GameManager.instance.UpdateUI();
         }
     }
 
     void Die()
     {
-        Debug.Log(characterName + " ist gestorben!");
+        Debug.Log($"💀 {characterName} died!");
 
-        if (!CompareTag("Player"))
+        // Wenn es der Player ist
+        if (this == GameManager.instance.playerStats)
         {
-            StartCoroutine(FadeOutAndDestroy());
+            // Game Over Logic
         }
-    }
-
-    IEnumerator FadeOutAndDestroy()
-    {
-        // Warte 2 Sekunden (Death Animation)
-        yield return new WaitForSeconds(2.0f);
-
-        // Fade out über 1 Sekunde
-        SpriteRenderer sprite = GetComponent<SpriteRenderer>();
-        if (sprite != null)
-        {
-            float elapsed = 0f;
-            float fadeDuration = 1.0f;
-            Color originalColor = sprite.color;
-
-            while (elapsed < fadeDuration)
-            {
-                elapsed += Time.deltaTime;
-                float alpha = Mathf.Lerp(1f, 0f, elapsed / fadeDuration);
-                sprite.color = new Color(originalColor.r, originalColor.g, originalColor.b, alpha);
-                yield return null;
-            }
-        }
-
-        Destroy(gameObject);
     }
 }

@@ -22,7 +22,7 @@ public class SceneTransition : MonoBehaviour
                 PlayerPrefs.SetInt("Attack", stats.attack);
                 PlayerPrefs.SetInt("Defense", stats.defense);
                 PlayerPrefs.SetInt("CurrentXP", stats.currentXP);
-                PlayerPrefs.SetInt("MaxXP", stats.maxXP);
+                PlayerPrefs.SetInt("MaxXP", stats.xpToNextLevel);
                 PlayerPrefs.Save();
                 
                 Debug.Log("💾 Stats gespeichert:  Gold=" + stats.gold);

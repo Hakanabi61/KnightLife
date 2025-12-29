@@ -2,121 +2,90 @@
 
 public enum EncounterType
 {
-    Start,      // Startpunkt
-    Enemy,      // Normaler Gegner
-    Elite,      // Starker Gegner
-    Chest,      // Schatztruhe
-    Shop,       // Händler
-    Campfire,   // Heilen
-    Mystery,    // Zufälliges Event
-    Choice,     // Kreuzung (Player wählt Path)
-    Boss        // Endgegner
+    Start,
+    Enemy,
+    Elite,
+    Chest,
+    Shop,
+    Campfire,
+    Mystery,
+    Choice,
+    Boss
 }
 
-/// <summary>
-/// Represents a single encounter point in the dungeon
-/// </summary>
 public class EncounterPoint : MonoBehaviour
 {
     [Header("Encounter Settings")]
     public EncounterType encounterType = EncounterType.Enemy;
-    public int encounterLevel = 1;
 
-    [Header("Visual")]
-    public SpriteRenderer encounterSprite;
-    public GameObject visualIndicator; // Optionales Visual (z.B. "!" Symbol)
+    [Header("Choice Options (nur für Choice Type)")]
+    [Tooltip("Welche Points sind bei Choice verfügbar?")]
+    public EncounterPoint choiceOption1; // z.B.  Chest
+    public EncounterPoint choiceOption2; // z.B. Shop
 
-    [Header("Choice Point Settings")]
-    [Tooltip("Nur für EncounterType.Choice - Welche Paths sind möglich?")]
-    public EncounterPoint[] choiceOptions; // Für Branching Paths
-
-    [Header("Next Point")]
-    [Tooltip("Für lineare Paths - nächster Punkt")]
-    public EncounterPoint nextPoint;
-
-    [Header("State")]
-    public bool isCompleted = false;
-    public bool isActive = false;
+    private SpriteRenderer spriteRenderer;
 
     void Start()
     {
-        if (encounterSprite == null)
-        {
-            encounterSprite = GetComponent<SpriteRenderer>();
-        }
-
-        // Visual Indicator verstecken bis aktiv
-        if (visualIndicator != null)
-        {
-            visualIndicator.SetActive(false);
-        }
+        spriteRenderer = GetComponent<SpriteRenderer>();
+        UpdateVisual();
     }
 
-    /// <summary>
-    /// Aktiviert diesen Encounter Point
-    /// </summary>
-    public void Activate()
+    void OnValidate()
     {
-        isActive = true;
-
-        if (visualIndicator != null)
-        {
-            visualIndicator.SetActive(true);
-        }
-
-        Debug.Log($"📍 Encounter activated:  {gameObject.name} ({encounterType})");
+        UpdateVisual();
     }
 
-    /// <summary>
-    /// Markiert Encounter als abgeschlossen
-    /// </summary>
-    public void Complete()
+    void UpdateVisual()
     {
-        isCompleted = true;
-        isActive = false;
+        if (spriteRenderer == null)
+            spriteRenderer = GetComponent<SpriteRenderer>();
 
-        if (visualIndicator != null)
+        if (spriteRenderer != null)
         {
-            visualIndicator.SetActive(false);
-        }
-
-        // Visual Feedback (Grau machen)
-        if (encounterSprite != null)
-        {
-            encounterSprite.color = new Color(0.5f, 0.5f, 0.5f, 0.7f);
-        }
-
-        Debug.Log($"✅ Encounter completed: {gameObject.name}");
-    }
-
-    /// <summary>
-    /// Editor Gizmos - Zeigt Verbindungen
-    /// </summary>
-    void OnDrawGizmos()
-    {
-        // Zeige Verbindung zum nächsten Point
-        if (nextPoint != null)
-        {
-            Gizmos.color = Color.cyan;
-            Gizmos.DrawLine(transform.position, nextPoint.transform.position);
-        }
-
-        // Zeige Choice Options
-        if (choiceOptions != null && choiceOptions.Length > 0)
-        {
-            Gizmos.color = Color.yellow;
-            foreach (EncounterPoint choice in choiceOptions)
+            switch (encounterType)
             {
-                if (choice != null)
-                {
-                    Gizmos.DrawLine(transform.position, choice.transform.position);
-                }
+                case EncounterType.Start:
+                    spriteRenderer.color = Color.green;
+                    break;
+                case EncounterType.Enemy:
+                case EncounterType.Elite:
+                    spriteRenderer.color = Color.red;
+                    break;
+                case EncounterType.Chest:
+                    spriteRenderer.color = Color.yellow;
+                    break;
+                case EncounterType.Shop:
+                    spriteRenderer.color = Color.cyan;
+                    break;
+                case EncounterType.Campfire:
+                    spriteRenderer.color = new Color(1f, 0.5f, 0f);
+                    break;
+                case EncounterType.Choice:
+                case EncounterType.Mystery:
+                    spriteRenderer.color = Color.magenta;
+                    break;
+                case EncounterType.Boss:
+                    spriteRenderer.color = new Color(0.5f, 0f, 0.5f);
+                    break;
             }
         }
+    }
 
-        // Zeige Encounter Type als Text (nur im Editor sichtbar)
-#if UNITY_EDITOR
-        UnityEditor.Handles.Label(transform.position + Vector3.up * 0.5f, encounterType.ToString());
-#endif
+    void OnDrawGizmos()
+    {
+        // Zeige Choice Verbindungen im Editor
+        if (encounterType == EncounterType.Choice)
+        {
+            Gizmos.color = Color.yellow;
+            if (choiceOption1 != null)
+            {
+                Gizmos.DrawLine(transform.position, choiceOption1.transform.position);
+            }
+            if (choiceOption2 != null)
+            {
+                Gizmos.DrawLine(transform.position, choiceOption2.transform.position);
+            }
+        }
     }
 }

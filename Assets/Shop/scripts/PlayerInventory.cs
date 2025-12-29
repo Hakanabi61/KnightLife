@@ -1,234 +1,242 @@
-﻿using System.Collections.Generic;
-using UnityEngine;
+﻿using UnityEngine;
+using System.Collections.Generic;
 
 public class PlayerInventory : MonoBehaviour
 {
     public static PlayerInventory instance;
 
-    [Header("Ausgerüstete Items")]
+    [Header("Inventory")]
+    public List<ShopItem> potions = new List<ShopItem>();
+    public List<ShopItem> weapons = new List<ShopItem>();
+    public List<ShopItem> armor = new List<ShopItem>();
+
+    [Header("Equipped Items")]
     public ShopItem equippedWeapon;
     public ShopItem equippedArmor;
-
-    [Header("Tränke")]
-    public List<PotionStack> potions = new List<PotionStack>();
-
-    [Header("Standard Heiltrank")]
-    public ShopItem defaultHealingPotion;
-
-    private CharacterStats playerStats;
-
-    [System.Serializable]
-    public class PotionStack
-    {
-        public ShopItem potion;
-        public int count;
-    }
 
     void Awake()
     {
         if (instance == null)
         {
             instance = this;
+            DontDestroyOnLoad(gameObject);
         }
         else
         {
-            if (instance.equippedWeapon != null)
-            {
-                equippedWeapon = instance.equippedWeapon;
-            }
-            if (instance.equippedArmor != null)
-            {
-                equippedArmor = instance.equippedArmor;
-            }
-
-            instance = this;
+            Destroy(gameObject);
         }
     }
 
-    void Start()
+    // ============================================
+    // ADD ITEMS (PUBLIC - für Dungeon Rewards)
+    // ============================================
+
+    public void AddPotion(ShopItem item)
     {
-        playerStats = GetComponent<CharacterStats>();
+        if (item == null) return;
 
-        if (playerStats == null)
-        {
-            Debug.LogError("PlayerInventory braucht CharacterStats auf dem gleichen Objekt!");
-        }
+        potions.Add(item);
+        Debug.Log($"✓ Added {item.itemName} to inventory");
 
-        LoadSavedPotions();
-
+        // Update UI
         if (GameManager.instance != null)
         {
             GameManager.instance.UpdatePotionUI();
         }
     }
 
-    public bool BuyItem(ShopItem item)
+    public void AddWeapon(ShopItem item)
     {
-        if (playerStats == null) return false;
+        if (item == null) return;
 
-        if (playerStats.gold < item.price)
+        weapons.Add(item);
+        Debug.Log($"✓ Added {item.itemName} to inventory");
+    }
+
+    public void AddArmor(ShopItem item)
+    {
+        if (item == null) return;
+
+        armor.Add(item);
+        Debug.Log($"✓ Added {item.itemName} to inventory");
+    }
+
+    // ============================================
+    // KAUFEN (für Shop/Marketplace)
+    // ============================================
+
+    public bool BuyItem(ShopItem item, int cost)
+    {
+        if (item == null)
         {
-            Debug.Log("❌ Nicht genug Gold!");
+            Debug.LogWarning("⚠️ Item is null!");
             return false;
         }
 
-        playerStats.gold -= item.price;
-        PlayerPrefs.SetInt("Gold", playerStats.gold);
+        // Prüfe ob genug Gold
+        if (GameManager.instance == null || GameManager.instance.playerStats == null)
+        {
+            Debug.LogWarning("⚠️ GameManager or PlayerStats not found!");
+            return false;
+        }
 
+        if (GameManager.instance.playerStats.gold < cost)
+        {
+            Debug.Log("⚠️ Nicht genug Gold!");
+            return false;
+        }
+
+        // Gold abziehen
+        GameManager.instance.playerStats.gold -= cost;
+
+        // Item zu passendem Inventory hinzufügen
         switch (item.type)
         {
             case ShopItem.ItemType.Potion:
                 AddPotion(item);
-                Debug.Log("✅ Trank gekauft: " + item.itemName);
                 break;
 
             case ShopItem.ItemType.Weapon:
-                EquipWeapon(item);
-                Debug.Log("⚔️ Waffe ausgerüstet: " + item.itemName);
+                AddWeapon(item);
                 break;
 
             case ShopItem.ItemType.Armor:
-                EquipArmor(item);
-                Debug.Log("🛡️ Rüstung ausgerüstet: " + item.itemName);
+                AddArmor(item);
+                break;
+
+            case ShopItem.ItemType.Accessory:
+                Debug.Log($"✓ Bought accessory: {item.itemName}");
                 break;
         }
 
-        SaveInventory();
+        // UI Update
+        if (GameManager.instance != null)
+        {
+            GameManager.instance.UpdateUI();
+        }
+
+        Debug.Log($"✓ Gekauft: {item.itemName} für {cost} Gold");
         return true;
     }
 
-    void AddPotion(ShopItem potion)
+    // Überladung:  Nutzt item.price wenn kein cost angegeben
+    public bool BuyItem(ShopItem item)
     {
-        PotionStack existing = potions.Find(p => p.potion == potion);
+        if (item == null)
+        {
+            Debug.LogWarning("⚠️ Item is null!");
+            return false;
+        }
 
-        if (existing != null)
-        {
-            existing.count++;
-        }
-        else
-        {
-            potions.Add(new PotionStack { potion = potion, count = 1 });
-        }
+        // Nutze den Preis vom Item selbst
+        return BuyItem(item, item.price);
     }
+
+    // ============================================
+    // USE ITEMS
+    // ============================================
 
     public void UsePotion(int index)
     {
         if (index < 0 || index >= potions.Count)
         {
-            Debug.Log("❌ Ungültiger Trank-Index!");
+            Debug.LogWarning("⚠️ Invalid potion index!");
             return;
         }
 
-        PotionStack stack = potions[index];
+        ShopItem potion = potions[index];
 
-        if (playerStats != null)
+        // Heal Player
+        if (GameManager.instance != null && GameManager.instance.playerStats != null)
         {
-            playerStats.Heal(stack.potion.healAmount);
-            Debug.Log("💊 Trank benutzt!  +" + stack.potion.healAmount + " HP");
-        }
-        else
-        {
-            GameObject player = GameObject.FindGameObjectWithTag("Player");
-            if (player != null)
-            {
-                CharacterStats stats = player.GetComponent<CharacterStats>();
-                if (stats != null)
-                {
-                    stats.Heal(stack.potion.healAmount);
-                    Debug.Log("💊 Trank benutzt! +" + stack.potion.healAmount + " HP");
-                }
-            }
+            GameManager.instance.playerStats.Heal(potion.healAmount);
+            Debug.Log($"✓ Used {potion.itemName} - Healed {potion.healAmount} HP");
         }
 
-        stack.count--;
+        // Remove from inventory
+        potions.RemoveAt(index);
 
-        if (stack.count <= 0)
+        // Update UI
+        if (GameManager.instance != null)
         {
-            potions.RemoveAt(index);
+            GameManager.instance.UpdatePotionUI();
+            GameManager.instance.UpdateUI();
         }
-
-        SaveInventory();
     }
 
-    void EquipWeapon(ShopItem weapon)
+    // ============================================
+    // EQUIP ITEMS
+    // ============================================
+
+    public void EquipWeapon(ShopItem weapon)
     {
+        if (weapon == null) return;
+
+        // Unequip old weapon
         if (equippedWeapon != null)
         {
-            playerStats.attack -= equippedWeapon.attackBonus;
+            weapons.Add(equippedWeapon);
         }
 
+        // Equip new weapon
         equippedWeapon = weapon;
-        playerStats.attack += weapon.attackBonus;
+        weapons.Remove(weapon);
 
-        Debug.Log("⚔️ Angriff jetzt: " + playerStats.attack);
+        // Apply stats
+        if (GameManager.instance != null && GameManager.instance.playerStats != null)
+        {
+            GameManager.instance.playerStats.attack += weapon.attackBonus;
+            GameManager.instance.UpdateUI();
+        }
+
+        Debug.Log($"✓ Equipped {weapon.itemName}");
     }
 
-    void EquipArmor(ShopItem armor)
+    public void EquipArmor(ShopItem armorItem)
     {
+        if (armorItem == null) return;
+
+        // Unequip old armor
         if (equippedArmor != null)
         {
-            playerStats.defense -= equippedArmor.defenseBonus;
-            playerStats.maxHP -= equippedArmor.maxHPBonus;
+            armor.Add(equippedArmor);
         }
 
-        equippedArmor = armor;
-        playerStats.defense += armor.defenseBonus;
-        playerStats.maxHP += armor.maxHPBonus;
-        playerStats.currentHP += armor.maxHPBonus;
+        // Equip new armor
+        equippedArmor = armorItem;
+        armor.Remove(armorItem);
 
-        Debug.Log("🛡️ Verteidigung jetzt: " + playerStats.defense);
+        // Apply stats
+        if (GameManager.instance != null && GameManager.instance.playerStats != null)
+        {
+            GameManager.instance.playerStats.defense += armorItem.defenseBonus;
+            GameManager.instance.UpdateUI();
+        }
+
+        Debug.Log($"✓ Equipped {armorItem.itemName}");
     }
 
-    void SaveInventory()
+    // ============================================
+    // UTILITY
+    // ============================================
+
+    public int GetPotionCount()
     {
-        PlayerPrefs.SetString("EquippedWeapon", equippedWeapon != null ? equippedWeapon.itemName : "");
-        PlayerPrefs.SetString("EquippedArmor", equippedArmor != null ? equippedArmor.itemName : "");
-
-        int totalPotions = 0;
-        foreach (var stack in potions)
-        {
-            totalPotions += stack.count;
-        }
-        PlayerPrefs.SetInt("TotalPotions", totalPotions);
-
-        PlayerPrefs.Save();
-        Debug.Log("💾 Inventar gespeichert!  Tränke: " + totalPotions);
+        return potions.Count;
     }
 
-    void LoadSavedPotions()
+    public bool HasPotions()
     {
-        int savedPotions = PlayerPrefs.GetInt("TotalPotions", 0);
+        return potions.Count > 0;
+    }
 
-        if (savedPotions > 0)
-        {
-            ShopItem healPotion = defaultHealingPotion;
-
-            if (healPotion == null)
-            {
-                MarketplaceManager marketplace = FindAnyObjectByType<MarketplaceManager>();
-                if (marketplace != null && marketplace.availableItems.Count > 0)
-                {
-                    foreach (var item in marketplace.availableItems)
-                    {
-                        if (item.type == ShopItem.ItemType.Potion)
-                        {
-                            healPotion = item;
-                            break;
-                        }
-                    }
-                }
-            }
-
-            if (healPotion != null)
-            {
-                potions.Clear();
-                potions.Add(new PotionStack { potion = healPotion, count = savedPotions });
-                Debug.Log("📥 Tränke geladen: " + savedPotions);
-            }
-            else
-            {
-                Debug.LogWarning("⚠️ Kein Heiltrank gefunden zum Laden!");
-            }
-        }
+    public void ClearInventory()
+    {
+        potions.Clear();
+        weapons.Clear();
+        armor.Clear();
+        equippedWeapon = null;
+        equippedArmor = null;
+        Debug.Log("✓ Inventory cleared");
     }
 }

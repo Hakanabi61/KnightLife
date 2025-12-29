@@ -1,16 +1,17 @@
 ﻿using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
+using System.Collections;
 
 public class GameManager : MonoBehaviour
 {
     public static GameManager instance;
 
     [Header("Debug")]
-    public bool enableDebugLogs = false;
+    public bool enableDebugLogs = true;
 
     [Header("Player Referenzen")]
-    public PlayerController player;
+    public GameObject player;
     public CharacterStats playerStats;
 
     [Header("Story System")]
@@ -24,7 +25,7 @@ public class GameManager : MonoBehaviour
     public TextMeshProUGUI highscoreText;
 
     [Header("Buttons")]
-    public GameObject choiceButtons;
+    public GameObject[] choiceButtons;
     public Button shopButton;
     public Button potionButton;
 
@@ -53,21 +54,21 @@ public class GameManager : MonoBehaviour
 
     [Header("Kampf-Einstellungen")]
     public float barSpeed = 2f;
-    public float defaultHitQuality = 50f;
+    public int defaultHitQuality = 50;
+    [Space(10)]
+    [Tooltip("Verzögerung bis Enemy angreift nach Player Hit")]
+    public float enemyAttackDelay = 1.5f;
+    [Tooltip("Verzögerung bis nächste Player Runde startet")]
+    public float nextTurnDelay = 1f;
+    [Tooltip("Verzögerung bis Win Battle Screen")]
+    public float winBattleDelay = 1.5f;
+    [Tooltip("Verzögerung bis Battle komplett endet")]
+    public float endBattleDelay = 2f;
 
-    [Header("Level Up Effect")]
-    public GameObject levelUpEffect;
-    public AudioClip levelUpSound;
-
-    [Header("Shop Items Referenz")]
-    public ShopItem defaultHealingPotion;
-
-    [Header("Enemy Animations")]
-    public bool enableEnemyAnimations = true;
-
-    private bool isBattling = false;
+    // Private Variables
     private CharacterStats currentEnemy;
-    public int highscore = 1;
+    private bool isAttackBarActive = false;
+    private bool barMovingRight = true;
 
     void Awake()
     {
@@ -83,181 +84,90 @@ public class GameManager : MonoBehaviour
 
     void Start()
     {
-        // Performance Settings
-        Application.targetFrameRate = 60;
-        QualitySettings.vSyncCount = 0;
+        if (enableDebugLogs) Debug.Log("🎮 GameManager START");
 
-        if (audioSource == null) audioSource = GetComponent<AudioSource>();
-        if (musicSource != null && !musicSource.isPlaying) musicSource.Play();
-
-        // Player finden
-        if (player == null)
+        if (audioSource == null)
         {
-            GameObject playerObj = GameObject.FindGameObjectWithTag("Player");
-            if (playerObj != null)
-            {
-                player = playerObj.GetComponent<PlayerController>();
-                if (enableDebugLogs) Debug.Log("✅ Player gefunden:  " + playerObj.name);
-            }
-            else
-            {
-                Debug.LogError("❌ KEIN PLAYER GEFUNDEN!");
-            }
+            audioSource = GetComponent<AudioSource>();
         }
 
-        // PlayerStats finden
-        if (playerStats == null)
+        if (playerStats == null && player != null)
         {
-            GameObject playerObj = GameObject.FindGameObjectWithTag("Player");
-            if (playerObj != null)
-            {
-                playerStats = playerObj.GetComponent<CharacterStats>();
-            }
+            playerStats = player.GetComponent<CharacterStats>();
         }
 
-        highscore = PlayerPrefs.GetInt("Highscore", 1);
-
-        if (playerStats != null)
+        if (battlePanel != null)
         {
-            playerStats.gold = PlayerPrefs.GetInt("Gold", 0);
+            battlePanel.SetActive(false);
         }
 
-        // UI initialisieren
-        if (storyPanel != null) storyPanel.SetActive(false);
-        if (hitButton != null) hitButton.SetActive(false);
-        if (attackBar != null) attackBar.gameObject.SetActive(false);
-        if (battlePanel != null) battlePanel.SetActive(false);
-        if (choiceButtons != null) choiceButtons.SetActive(false);
-
-        if (potionButton != null)
+        if (hitButton != null)
         {
-            potionButton.onClick.AddListener(UsePotionInBattle);
-            potionButton.gameObject.SetActive(false);
+            hitButton.SetActive(false);
         }
 
-        // UI Validierung
-        ValidateUIConnections();
+        if (attackBar != null)
+        {
+            attackBar.gameObject.SetActive(false);
+            attackBar.minValue = 0;
+            attackBar.maxValue = 100;
+            attackBar.value = 0;
+        }
 
         UpdateUI();
         UpdatePotionUI();
-
-        if (playerStats != null)
-        {
-            UpdateLevelUI(playerStats.level, playerStats.currentXP, playerStats.maxXP);
-        }
-
-        Invoke("UpdatePotionUI", 0.5f);
-    }
-
-    void ValidateUIConnections()
-    {
-        if (enableDebugLogs) Debug.Log("=== UI CONNECTION VALIDATION ===");
-
-        if (playerHPText == null) Debug.LogWarning("❌ playerHPText is not connected!");
-        if (levelBar == null) Debug.LogWarning("❌ levelBar is not connected!");
-        if (battlePanel == null) Debug.LogWarning("❌ battlePanel is not connected!");
-        if (battleText == null) Debug.LogWarning("❌ battleText is not connected!");
-        if (criticalHitSound == null) Debug.LogWarning("⚠️ criticalHitSound is not assigned (will use hitSound)!");
-
-        if (enableDebugLogs) Debug.Log("=== END OF VALIDATION ===");
     }
 
     void Update()
     {
-        if (isBattling && attackBar != null && attackBar.gameObject.activeSelf)
+        // Attack Bar Animation
+        if (isAttackBarActive && attackBar != null)
         {
-            attackBar.value = Mathf.PingPong(Time.time * barSpeed * 100, 100);
-        }
-    }
-
-    public void AddGold(int amount)
-    {
-        if (playerStats != null)
-        {
-            playerStats.gold += amount;
-            PlayerPrefs.SetInt("Gold", playerStats.gold);
-            PlayerPrefs.Save();
-            UpdateUI();
-
-            if (audioSource != null && coinSound != null)
+            if (barMovingRight)
             {
-                audioSource.PlayOneShot(coinSound);
+                attackBar.value += barSpeed * Time.deltaTime * 100f;
+                if (attackBar.value >= attackBar.maxValue)
+                {
+                    barMovingRight = false;
+                }
+            }
+            else
+            {
+                attackBar.value -= barSpeed * Time.deltaTime * 100f;
+                if (attackBar.value <= attackBar.minValue)
+                {
+                    barMovingRight = true;
+                }
+            }
+
+            // HIT Button sichtbar wenn Bar aktiv
+            if (hitButton != null && !hitButton.activeSelf)
+            {
+                hitButton.SetActive(true);
             }
         }
     }
 
-    public void UpdateUI()
+    // ============================================
+    // BATTLE SYSTEM
+    // ============================================
+
+    public void TriggerEncounter(CharacterStats enemy)
     {
-        if (playerStats != null && goldText != null)
-        {
-            goldText.text = "Gold: " + playerStats.gold;
-        }
+        if (enableDebugLogs) Debug.Log($"🎮 TriggerEncounter: {enemy.characterName}");
 
-        if (highscoreText != null)
-        {
-            highscoreText.text = "Highscore:  " + highscore;
-        }
-    }
-
-    public void UpdatePlayerHPText(int current, int max)
-    {
-        if (playerHPText != null)
-        {
-            playerHPText.text = "HP: " + current + " / " + max;
-        }
-
-        if (hpText != null)
-        {
-            hpText.text = "HP: " + current + " / " + max;
-        }
-    }
-
-    public void UpdateLevelUI(int level, int currentXP, int maxXP)
-    {
-        if (levelText != null)
-        {
-            levelText.text = "Level " + level;
-        }
-
-        if (levelBar != null)
-        {
-            levelBar.maxValue = maxXP;
-            levelBar.value = currentXP;
-        }
-    }
-
-    public void ShowLevelUpEffect()
-    {
-        if (levelUpEffect != null && player != null)
-        {
-            GameObject effect = Instantiate(levelUpEffect, player.transform.position, Quaternion.identity);
-            Destroy(effect, 2f);
-        }
-
-        if (audioSource != null && levelUpSound != null)
-        {
-            audioSource.PlayOneShot(levelUpSound);
-        }
-    }
-
-    public void StartBattle(CharacterStats enemy)
-    {
-        isBattling = true;
         currentEnemy = enemy;
 
-        if (player != null)
-        {
-            player.StopRunning();
-        }
-
+        // Battle Panel öffnen
         if (battlePanel != null)
         {
             battlePanel.SetActive(true);
         }
 
+        // Enemy Info anzeigen
         if (enemyNameText != null)
         {
-            enemyNameText.text = enemy.characterName + " Lvl " + enemy.level + " (HP: " + enemy.currentHP + ")";
+            enemyNameText.text = $"{enemy.characterName} Lvl {enemy.level} (HP: {enemy.currentHP})";
         }
 
         if (enemyHPBar != null)
@@ -266,197 +176,180 @@ public class GameManager : MonoBehaviour
             enemyHPBar.value = enemy.currentHP;
         }
 
-        ShowBattleText(enemy.characterName + " blockiert den Weg!");
-
-        if (choiceButtons == null)
-        {
-            choiceButtons = GameObject.Find("ChoiceButtons");
-        }
-
-        if (choiceButtons != null)
-        {
-            choiceButtons.SetActive(true);
-
-            for (int i = 0; i < choiceButtons.transform.childCount; i++)
-            {
-                choiceButtons.transform.GetChild(i).gameObject.SetActive(true);
-            }
-
-            if (enableDebugLogs) Debug.Log("✅ ChoiceButtons aktiviert!");
-        }
-        else
-        {
-            Debug.LogError("❌ ChoiceButtons NICHT GEFUNDEN!");
-        }
-
+        // HIT Button verbinden
         if (hitButton != null)
         {
-            hitButton.SetActive(true);
+            Button btn = hitButton.GetComponent<Button>();
+            if (btn != null)
+            {
+                btn.onClick.RemoveAllListeners();
+                btn.onClick.AddListener(OnHitButtonPressed);
+                if (enableDebugLogs) Debug.Log("✅ HIT Button connected");
+            }
+            hitButton.SetActive(false);
         }
 
+        // Attack Bar starten
         if (attackBar != null)
         {
             attackBar.gameObject.SetActive(true);
             attackBar.value = 0;
+            isAttackBarActive = true;
+            barMovingRight = true;
+            if (enableDebugLogs) Debug.Log("✅ Attack Bar started");
         }
 
-        if (potionButton != null)
-        {
-            potionButton.gameObject.SetActive(true);
-            UpdatePotionUI();
-        }
+        ShowBattleText($"{enemy.characterName} erscheint!");
     }
 
-    public void OnAttackButtonPressed()
+    public void OnHitButtonPressed()
     {
-        if (currentEnemy == null || playerStats == null) return;
+        if (enableDebugLogs) Debug.Log("========== HIT BUTTON PRESSED ==========");
 
+        // DEBUG LOGS
+        if (enableDebugLogs)
+        {
+            Debug.Log($"✓ currentEnemy: {(currentEnemy != null ? currentEnemy.characterName : "NULL!! !")}");
+            Debug.Log($"✓ playerStats: {(playerStats != null ? "OK" : "NULL!! !")}");
+            Debug.Log($"✓ isAttackBarActive: {isAttackBarActive}");
+            Debug.Log($"✓ attackBar:  {(attackBar != null ? $"Value={attackBar.value}" : "NULL!!!")}");
+        }
+
+        if (!isAttackBarActive || attackBar == null)
+        {
+            Debug.LogWarning("⚠️ Attack bar not active!");
+            return;
+        }
+
+        if (currentEnemy == null)
+        {
+            Debug.LogError("❌ currentEnemy is NULL!  Battle cannot proceed!");
+            return;
+        }
+
+        if (playerStats == null)
+        {
+            Debug.LogError("❌ playerStats is NULL! Battle cannot proceed!");
+            return;
+        }
+
+        if (enableDebugLogs) Debug.Log("✓ All checks passed, processing hit...");
+
+        // Button verstecken
         if (hitButton != null)
         {
             hitButton.SetActive(false);
+            if (enableDebugLogs) Debug.Log("✓ Hit button hidden");
         }
 
-        // WICHTIG: Wert VORHER speichern!
-        float hitQuality = attackBar != null ? attackBar.value : defaultHitQuality;
-        hitQuality = Mathf.Clamp(hitQuality, 0f, 100f);
+        // Bar stoppen
+        isAttackBarActive = false;
+        if (enableDebugLogs) Debug.Log("✓ Attack bar stopped");
 
-        if (attackBar != null)
+        // Damage berechnen basierend auf Bar Position
+        float barValue = attackBar.value;
+        float damageMultiplier = 1f;
+        bool isCritical = false;
+
+        // Timing Zones
+        if (barValue >= 45f && barValue <= 55f)
         {
-            attackBar.gameObject.SetActive(false);
+            // PERFECT - Grüne Zone (Mitte)
+            damageMultiplier = 2f;
+            isCritical = true;
+            if (enableDebugLogs) Debug.Log("⭐ CRITICAL HIT!");
         }
-
-        int baseDamage = playerStats.attack;
-
-        // ⚡ KRITISCHE ZONE:  40-60% = KRITISCH!  ⚡
-        bool isCritical = (hitQuality >= 40f && hitQuality <= 60f);
-
-        // Damage Berechnung
-        float damageMultiplier;
-
-        if (isCritical)
+        else if (barValue >= 30f && barValue <= 70f)
         {
-            // KRITISCH: 40-60% = 2x Schaden! 
-            damageMultiplier = 2.0f;
-        }
-        else if (hitQuality >= 25f && hitQuality <= 75f)
-        {
-            // Normal: 25-75% = 1x Schaden
-            damageMultiplier = 1.0f;
+            // GOOD - Gelbe Zone
+            damageMultiplier = 1f;
+            if (enableDebugLogs) Debug.Log("✓ Normal Hit");
         }
         else
         {
-            // Schwach: 0-25% oder 75-100% = 0. 5x Schaden
+            // MISS - Schwarze Zone
             damageMultiplier = 0.5f;
+            if (enableDebugLogs) Debug.Log("✗ Weak Hit");
         }
 
-        int finalDamage = (int)(baseDamage * damageMultiplier);
-        finalDamage = Mathf.Max(1, finalDamage);
-
-        // Animation
-        if (player != null)
+        // Schaden berechnen
+        if (playerStats != null && currentEnemy != null)
         {
-            Animator animator = player.GetComponent<Animator>();
+            int baseDamage = playerStats.attack;
+            int finalDamage = Mathf.RoundToInt(baseDamage * damageMultiplier);
+            finalDamage = Mathf.Max(1, finalDamage - currentEnemy.defense);
 
-            if (isCritical)
+            if (enableDebugLogs) Debug.Log($"💥 Damage:  {finalDamage} (Base: {baseDamage}, x{damageMultiplier})");
+
+            // Sound
+            if (audioSource != null)
             {
-                // KRITISCH = ComboAttack
-                if (animator != null)
+                if (isCritical && criticalHitSound != null)
                 {
-                    animator.SetTrigger("ComboAttack");
-                    if (enableDebugLogs) Debug.Log("💥 ComboAttack Animation!");
+                    audioSource.PlayOneShot(criticalHitSound);
                 }
+                else if (hitSound != null)
+                {
+                    audioSource.PlayOneShot(hitSound);
+                }
+            }
+
+            // Visual Effects
+            if (BattleEffects.instance != null && currentEnemy != null)
+            {
+                Vector3 effectPosition = currentEnemy.transform.position;
+
+                if (isCritical)
+                {
+                    BattleEffects.instance.PlayCriticalHitEffect(effectPosition);
+                }
+                else if (damageMultiplier < 1f)
+                {
+                    BattleEffects.instance.PlayWeakHitEffect(effectPosition);
+                }
+                else
+                {
+                    BattleEffects.instance.PlayNormalHitEffect(effectPosition);
+                }
+
+                BattleEffects.instance.PlayEnemyDamageEffect(currentEnemy.gameObject);
+            }
+
+            // Schaden anwenden
+            currentEnemy.TakeDamage(finalDamage);
+
+            // UI Update
+            if (enemyHPBar != null)
+            {
+                enemyHPBar.value = currentEnemy.currentHP;
+            }
+
+            if (enemyNameText != null)
+            {
+                enemyNameText.text = $"{currentEnemy.characterName} Lvl {currentEnemy.level} (HP:  {currentEnemy.currentHP})";
+            }
+
+            ShowBattleText($"Du triffst für {finalDamage} Schaden!");
+
+            // Enemy besiegt? 
+            if (currentEnemy.currentHP <= 0)
+            {
+                if (enableDebugLogs) Debug.Log("🎉 Enemy defeated!");
+                Invoke("WinBattle", winBattleDelay);
             }
             else
             {
-                // Normal/Schwach = AirSlash
-                if (animator != null)
-                {
-                    animator.SetTrigger("AirSlash");
-                    if (enableDebugLogs) Debug.Log("⚔️ AirSlash Animation!");
-                }
+                // Enemy greift zurück
+                Invoke("EnemyCounterAttack", enemyAttackDelay);
             }
-        }
-
-        // Battle Text
-        if (isCritical)
-        {
-            ShowBattleText("💥 KRITISCH! " + finalDamage + " Schaden!  (Perfect:  " + hitQuality.ToString("F0") + "%)");
-        }
-        else if (damageMultiplier < 1f)
-        {
-            ShowBattleText("😞 Schwacher Treffer...  " + finalDamage + " Schaden");
-        }
-        else
-        {
-            ShowBattleText("Du triffst für " + finalDamage + " Schaden!");
-        }
-
-        // Sound
-        if (audioSource != null)
-        {
-            if (isCritical && criticalHitSound != null)
-            {
-                audioSource.PlayOneShot(criticalHitSound);
-            }
-            else if (hitSound != null)
-            {
-                audioSource.PlayOneShot(hitSound);
-            }
-        }
-
-        // Camera Shake
-        if (isCritical && CameraShake.instance != null)
-        {
-            CameraShake.instance.CriticalHitShake();
-        }
-
-        // ✨ VISUAL EFFECTS ✨
-        if (BattleEffects.instance != null && currentEnemy != null)
-        {
-            Vector3 effectPosition = currentEnemy.transform.position;
-
-            if (isCritical)
-            {
-                BattleEffects.instance.PlayCriticalHitEffect(effectPosition);
-            }
-            else if (damageMultiplier < 1f)
-            {
-                BattleEffects.instance.PlayWeakHitEffect(effectPosition);
-            }
-            else
-            {
-                BattleEffects.instance.PlayNormalHitEffect(effectPosition);
-            }
-
-            // Enemy damage flash
-            BattleEffects.instance.PlayEnemyDamageEffect(currentEnemy.gameObject);
-        }
-
-        currentEnemy.TakeDamage(finalDamage);
-
-        if (enemyHPBar != null)
-        {
-            enemyHPBar.value = currentEnemy.currentHP;
-        }
-
-        if (enemyNameText != null)
-        {
-            enemyNameText.text = currentEnemy.characterName + " Lvl " + currentEnemy.level + " (HP: " + currentEnemy.currentHP + ")";
-        }
-
-        if (currentEnemy.currentHP <= 0)
-        {
-            Invoke("WinBattle", 1.5f);
-        }
-        else
-        {
-            Invoke("EnemyCounterAttack", 1.5f);
         }
     }
 
     void EnemyCounterAttack()
     {
         if (currentEnemy == null || playerStats == null) return;
+
+        if (enableDebugLogs) Debug.Log($"👹 {currentEnemy.characterName} greift an!");
 
         // Enemy Attack Animation
         Animator enemyAnimator = currentEnemy.GetComponent<Animator>();
@@ -468,7 +361,7 @@ public class GameManager : MonoBehaviour
         int damage = Mathf.Max(1, currentEnemy.attack - playerStats.defense);
         playerStats.TakeDamage(damage);
 
-        ShowBattleText(currentEnemy.characterName + " greift an!  -" + damage + " HP");
+        ShowBattleText($"{currentEnemy.characterName} greift an!  -{damage} HP");
 
         if (audioSource != null && hitSound != null)
         {
@@ -481,29 +374,30 @@ public class GameManager : MonoBehaviour
             BattleEffects.instance.PlayEnemyDamageEffect(player.gameObject);
         }
 
+        UpdateUI();
+
         if (playerStats.currentHP <= 0)
         {
             if (enableDebugLogs) Debug.Log("💀 Player besiegt!");
             ShowBattleText("Du wurdest besiegt!");
-            Invoke("GameOver", 2f);
+            Invoke("GameOver", endBattleDelay);
         }
         else
         {
-            Invoke("PlayerTurnStart", 1f);
+            // Nächste Runde - Attack Bar wieder starten
+            Invoke("PlayerTurnStart", nextTurnDelay);
         }
     }
 
     void PlayerTurnStart()
     {
-        if (hitButton != null)
-        {
-            hitButton.SetActive(true);
-        }
+        if (enableDebugLogs) Debug.Log("⚔️ Player Turn");
 
         if (attackBar != null)
         {
-            attackBar.gameObject.SetActive(true);
             attackBar.value = 0;
+            isAttackBarActive = true;
+            barMovingRight = true;
         }
 
         ShowBattleText("Dein Zug!");
@@ -524,7 +418,41 @@ public class GameManager : MonoBehaviour
             audioSource.PlayOneShot(winSound);
         }
 
-        Invoke("EndBattle", 2f);
+        Invoke("EndBattle", endBattleDelay);
+    }
+
+    void EndBattle()
+    {
+        if (enableDebugLogs) Debug.Log("🏁 Battle Ended");
+
+        // Battle UI verstecken
+        if (battlePanel != null)
+        {
+            battlePanel.SetActive(false);
+        }
+
+        if (attackBar != null)
+        {
+            attackBar.gameObject.SetActive(false);
+        }
+
+        if (hitButton != null)
+        {
+            hitButton.SetActive(false);
+        }
+
+        isAttackBarActive = false;
+
+  
+    }
+
+    void GameOver()
+    {
+        if (enableDebugLogs) Debug.Log("💀 GAME OVER");
+
+        ShowBattleText("GAME OVER");
+
+        // TODO: Game Over Screen
     }
 
     public void OnFleeButtonPressed()
@@ -536,173 +464,70 @@ public class GameManager : MonoBehaviour
             audioSource.PlayOneShot(fleeSound);
         }
 
-        Invoke("EndBattle", 1f);
+        Invoke("EndBattle", endBattleDelay);
     }
 
-    void EndBattle()
-    {
-        isBattling = false;
-
-        if (battlePanel != null)
-        {
-            battlePanel.SetActive(false);
-        }
-
-        if (hitButton != null)
-        {
-            hitButton.SetActive(false);
-        }
-
-        if (attackBar != null)
-        {
-            attackBar.gameObject.SetActive(false);
-        }
-
-        if (potionButton != null)
-        {
-            potionButton.gameObject.SetActive(false);
-        }
-
-        if (choiceButtons != null)
-        {
-            choiceButtons.SetActive(false);
-        }
-
-        if (player != null)
-        {
-            player.StartRunning();
-        }
-
-        currentEnemy = null;
-    }
-
-    public void ShowBattleText(string text)
+    void ShowBattleText(string text)
     {
         if (battleText != null)
         {
             battleText.text = text;
+            if (enableDebugLogs) Debug.Log($"📜 Battle Text: {text}");
         }
     }
 
-    public void ShowStory(string text)
+    // ============================================
+    // UI UPDATES
+    // ============================================
+
+    public void UpdateUI()
     {
-        if (storyPanel != null && storyText != null)
+        if (playerStats == null) return;
+
+        if (hpText != null)
         {
-            storyPanel.SetActive(true);
-            storyText.text = text;
-
-            if (player != null)
-            {
-                player.StopRunning();
-            }
-
-            Invoke("HideStory", 3f);
-        }
-    }
-
-    void HideStory()
-    {
-        if (storyPanel != null)
-        {
-            storyPanel.SetActive(false);
+            hpText.text = $"HP: {playerStats.currentHP}/{playerStats.maxHP}";
         }
 
-        if (player != null)
+        if (playerHPText != null)
         {
-            player.StartRunning();
-        }
-    }
-
-    void UsePotionInBattle()
-    {
-        if (PlayerInventory.instance == null)
-        {
-            if (enableDebugLogs) Debug.Log("❌ Kein Inventar gefunden!");
-            return;
+            playerHPText.text = $"HP: {playerStats.currentHP}/{playerStats.maxHP}";
         }
 
-        if (PlayerInventory.instance.potions.Count == 0)
+        if (levelText != null)
         {
-            if (enableDebugLogs) Debug.Log("❌ Keine Tränke vorhanden!");
-            ShowBattleText("Keine Tränke!");
-            return;
+            levelText.text = $"Level: {playerStats.level}";
         }
 
-        int healAmount = PlayerInventory.instance.potions[0].potion.healAmount;
-        PlayerInventory.instance.UsePotion(0);
-        UpdatePotionUI();
-        ShowBattleText("Trank benutzt!  +" + healAmount + " HP");
-        Invoke("EnemyAttackTurn", 1f);
+        if (goldText != null)
+        {
+            goldText.text = $"Gold: {playerStats.gold}";
+        }
+
+        if (levelBar != null)
+        {
+            levelBar.maxValue = playerStats.xpToNextLevel;
+            levelBar.value = playerStats.currentXP;
+        }
     }
 
     public void UpdatePotionUI()
     {
-        if (PlayerInventory.instance == null) return;
-
-        int potionCount = 0;
-        foreach (var stack in PlayerInventory.instance.potions)
+        if (potionCountText != null && PlayerInventory.instance != null)
         {
-            potionCount += stack.count;
-        }
-
-        if (potionButton != null)
-        {
-            TextMeshProUGUI btnText = potionButton.GetComponentInChildren<TextMeshProUGUI>();
-            if (btnText != null)
-            {
-                btnText.text = "💊 Trank (" + potionCount + ")";
-            }
-            potionButton.interactable = (potionCount > 0);
-        }
-
-        if (potionCountText != null)
-        {
-            potionCountText.text = "💊 Tränke:  " + potionCount;
+            int potionCount = PlayerInventory.instance.potions.Count;
+            potionCountText.text = $"x{potionCount}";
         }
     }
 
-    void EnemyAttackTurn()
+    public void AddGold(int amount)
     {
-        if (currentEnemy != null && playerStats != null)
+        if (playerStats != null)
         {
-            int damage = Mathf.Max(1, currentEnemy.attack - playerStats.defense);
-            playerStats.TakeDamage(damage);
-            ShowBattleText(currentEnemy.characterName + " greift an! -" + damage + " HP");
-
-            if (playerStats.currentHP <= 0)
-            {
-                if (enableDebugLogs) Debug.Log("💀 Player besiegt!");
-                ShowBattleText("Du wurdest besiegt!");
-                Invoke("GameOver", 2f);
-            }
-        }
-    }
-
-    void GameOver()
-    {
-        if (enableDebugLogs) Debug.Log("🎮 GAME OVER");
-        UnityEngine.SceneManagement.SceneManager.LoadScene(
-            UnityEngine.SceneManagement.SceneManager.GetActiveScene().name
-        );
-    }
-
-    public void TriggerEncounter(GameObject enemy)
-    {
-        if (enemy != null)
-        {
-            CharacterStats enemyStats = enemy.GetComponent<CharacterStats>();
-            if (enemyStats != null)
-            {
-                StartBattle(enemyStats);
-            }
-        }
-    }
-
-    public void TriggerEncounter(CharacterStats enemyStats)
-    {
-        if (enemyStats != null)
-        {
-            StartBattle(enemyStats);
+            playerStats.gold += amount;
+            PlayerPrefs.SetInt("Gold", playerStats.gold);
+            UpdateUI();
+            if (enableDebugLogs) Debug.Log($"💰 +{amount} Gold!  Total: {playerStats.gold}");
         }
     }
 
@@ -711,6 +536,72 @@ public class GameManager : MonoBehaviour
         if (audioSource != null && coinSound != null)
         {
             audioSource.PlayOneShot(coinSound);
+        }
+    }
+
+    // ============================================
+    // STORY SYSTEM (Optional)
+    // ============================================
+
+    public void ShowStory(string text)
+    {
+        if (storyPanel != null)
+        {
+            storyPanel.SetActive(true);
+        }
+
+        if (storyText != null)
+        {
+            storyText.text = text;
+        }
+    }
+
+    public void HideStory()
+    {
+        if (storyPanel != null)
+        {
+            storyPanel.SetActive(false);
+        }
+    }
+
+    // ============================================
+    // ZUSÄTZLICHE UI UPDATES (für CharacterStats)
+    // ============================================
+
+    public void UpdatePlayerHPText(int current, int max)
+    {
+        if (playerHPText != null)
+        {
+            playerHPText.text = $"HP: {current}/{max}";
+        }
+
+        if (hpText != null)
+        {
+            hpText.text = $"HP: {current}/{max}";
+        }
+    }
+
+    public void UpdateLevelUI(int level, int currentXP, int maxXP)
+    {
+        if (levelText != null)
+        {
+            levelText.text = $"Level: {level}";
+        }
+
+        if (levelBar != null)
+        {
+            levelBar.maxValue = maxXP;
+            levelBar.value = currentXP;
+        }
+    }
+
+    public void ShowLevelUpEffect()
+    {
+        if (enableDebugLogs) Debug.Log("🎉 LEVEL UP EFFECT!");
+
+        if (audioSource != null && winSound != null)
+        {
+            audioSource.PlayOneShot(winSound);
         }
     }
 }
