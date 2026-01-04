@@ -531,6 +531,7 @@ MonoBehaviour:
   encounterType: 7
   choiceOption1: {fileID: 1116877229}
   choiceOption2: {fileID: 2022894132}
+  enemyData: {fileID: 0}
 --- !u!212 &220919426
 SpriteRenderer:
   serializedVersion: 2
@@ -653,13 +654,14 @@ MonoBehaviour:
   player: {fileID: 459483183}
   moveSpeed: 3
   playerAnimator: {fileID: 0}
+  playerStats: {fileID: 0}
   encounterPoints:
   - {fileID: 1949203028}
   - {fileID: 490060284}
   - {fileID: 220919425}
-  - {fileID: 1116877229}
-  - {fileID: 2022894132}
   - {fileID: 731303221}
+  battleEnemy: {fileID: 480211959}
+  battlePanel: {fileID: 2030552962}
   encounterPanel: {fileID: 566266985}
   encounterTitleText: {fileID: 868033979}
   encounterDescriptionText: {fileID: 1960140423}
@@ -1104,6 +1106,7 @@ MonoBehaviour:
   encounterType: 1
   choiceOption1: {fileID: 0}
   choiceOption2: {fileID: 0}
+  enemyData: {fileID: 11400000, guid: fe4904f2d48ebbd4f9c6de288570bfc1, type: 2}
 --- !u!212 &490060285
 SpriteRenderer:
   serializedVersion: 2
@@ -1822,6 +1825,7 @@ MonoBehaviour:
   encounterType: 8
   choiceOption1: {fileID: 0}
   choiceOption2: {fileID: 0}
+  enemyData: {fileID: 0}
 --- !u!212 &731303222
 SpriteRenderer:
   serializedVersion: 2
@@ -2353,6 +2357,7 @@ MonoBehaviour:
   encounterType: 3
   choiceOption1: {fileID: 0}
   choiceOption2: {fileID: 0}
+  enemyData: {fileID: 0}
 --- !u!212 &1116877230
 SpriteRenderer:
   serializedVersion: 2
@@ -2600,7 +2605,7 @@ MonoBehaviour:
   battlePanel: {fileID: 2030552962}
   battleText: {fileID: 0}
   enemyNameText: {fileID: 1183473541}
-  enemyHPBar: {fileID: 0}
+  enemyHPBar: {fileID: 1995796711}
   attackBar: {fileID: 933896486}
   hitButton: {fileID: 1728043846}
   levelBar: {fileID: 0}
@@ -2880,6 +2885,7 @@ MonoBehaviour:
   encounterType: 0
   choiceOption1: {fileID: 0}
   choiceOption2: {fileID: 0}
+  enemyData: {fileID: 0}
 --- !u!212 &1949203029
 SpriteRenderer:
   serializedVersion: 2
@@ -3170,6 +3176,17 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1974270055}
   m_CullTransparentMesh: 1
+--- !u!114 &1995796711 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 333650287663002864, guid: 85814ee46962d1a4c96e517d07631d2f, type: 3}
+  m_PrefabInstance: {fileID: 640765326}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 67db9e8f0e2ae9c40bc1e2b64352a6b4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Slider
 --- !u!1 &2022894131
 GameObject:
   m_ObjectHideFlags: 0
@@ -3203,6 +3220,7 @@ MonoBehaviour:
   encounterType: 4
   choiceOption1: {fileID: 0}
   choiceOption2: {fileID: 0}
+  enemyData: {fileID: 0}
 --- !u!212 &2022894133
 SpriteRenderer:
   serializedVersion: 2

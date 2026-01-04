@@ -20,8 +20,11 @@ public class EncounterPoint : MonoBehaviour
 
     [Header("Choice Options (nur für Choice Type)")]
     [Tooltip("Welche Points sind bei Choice verfügbar?")]
-    public EncounterPoint choiceOption1; // z.B.  Chest
-    public EncounterPoint choiceOption2; // z.B. Shop
+    public EncounterPoint choiceOption1;
+    public EncounterPoint choiceOption2;
+
+    [Header("Enemy Data (für Battle Types)")]
+    public EnemyData enemyData;
 
     private SpriteRenderer spriteRenderer;
 

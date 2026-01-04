@@ -443,7 +443,17 @@ public class GameManager : MonoBehaviour
 
         isAttackBarActive = false;
 
-  
+        // NEU: Benachrichtige DungeonManager
+        if (DungeonManager.instance != null)
+        {
+            bool playerWon = (playerStats != null && playerStats.currentHP > 0);
+            if (enableDebugLogs) Debug.Log($"✅ Calling DungeonManager.OnBattleComplete({playerWon})");
+            DungeonManager.instance.OnBattleComplete(playerWon);
+        }
+        else
+        {
+            if (enableDebugLogs) Debug.Log("⚠️ DungeonManager. instance is NULL (probably in SampleScene)");
+        }
     }
 
     void GameOver()
