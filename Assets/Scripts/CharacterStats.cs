@@ -41,17 +41,17 @@ public class CharacterStats : MonoBehaviour
         }
     }
 
-    public void Heal(int amount)
+    public int Heal(int amount)
     {
+        int oldHP = currentHP;
         currentHP += amount;
-        currentHP = Mathf.Min(currentHP, maxHP);
-
-        Debug.Log($"{characterName} heals {amount} HP! HP:  {currentHP}/{maxHP}");
-
-        if (GameManager.instance != null)
+        if (currentHP > maxHP)
         {
-            GameManager.instance.UpdateUI();
+            currentHP = maxHP;
         }
+
+        int actualHeal = currentHP - oldHP;
+        return actualHeal;
     }
 
     public void RestoreHP(int amount)

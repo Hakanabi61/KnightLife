@@ -1278,8 +1278,8 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 180095187}
   m_HandleRect: {fileID: 180095186}
   m_Direction: 0
-  m_Value: 1
-  m_Size: 0.99999994
+  m_Value: 0
+  m_Size: 1
   m_NumberOfSteps: 0
   m_OnValueChanged:
     m_PersistentCalls:
@@ -2146,7 +2146,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 0, y: 0}
-  m_AnchoredPosition: {x: 1110, y: 1757}
+  m_AnchoredPosition: {x: 200, y: 100}
   m_SizeDelta: {x: 250, y: 70}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1203366375
@@ -2195,7 +2195,7 @@ MonoBehaviour:
       m_Calls:
       - m_Target: {fileID: 370194988}
         m_TargetAssemblyTypeName: SceneTransition, Assembly-CSharp
-        m_MethodName: ReturnToGame
+        m_MethodName: ReturnToDungeon
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}

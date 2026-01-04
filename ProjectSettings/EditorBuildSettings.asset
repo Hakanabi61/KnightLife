@@ -11,6 +11,9 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/Marketplace.unity
     guid: 54fbb783499027144a0bbd2ad99545ec
+  - enabled: 1
+    path: Assets/Scenes/DungeonScene.unity
+    guid: 4e914beab5c97944eaec0da4edaa450b
   m_configObjects:
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 2bcd2660ca9b64942af0de543d8d7100, type: 3}
   m_UseUCBPForAssetBundles: 0

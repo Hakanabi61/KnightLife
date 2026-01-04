@@ -477,7 +477,7 @@ public class GameManager : MonoBehaviour
         Invoke("EndBattle", endBattleDelay);
     }
 
-    void ShowBattleText(string text)
+    public void ShowBattleText(string text)
     {
         if (battleText != null)
         {

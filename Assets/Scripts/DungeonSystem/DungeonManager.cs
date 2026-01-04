@@ -58,10 +58,34 @@ public class DungeonManager : MonoBehaviour
     {
         if (enableDebugLogs) Debug.Log("========== DUNGEON START ==========");
 
-        // Player Stats holen
-        if (player != null && playerStats == null)
+        // WICHTIG:  IMMER Player neu finden nach Scene Load!
+        GameObject playerObj = GameObject.FindGameObjectWithTag("Player");
+
+        // Falls nicht gefunden, suche nach Namen
+        if (playerObj == null)
         {
-            playerStats = player.GetComponent<CharacterStats>();
+            Debug.LogWarning("⚠️ Player not found by tag, searching by name.. .");
+            playerObj = GameObject.Find("Player");
+        }
+
+        if (playerObj != null)
+        {
+            // WICHTIG: Stelle sicher dass Tag gesetzt ist! 
+            if (playerObj.tag != "Player")
+            {
+                Debug.LogWarning($"⚠️ Player GameObject has wrong tag '{playerObj.tag}', fixing to 'Player'");
+                playerObj.tag = "Player";
+            }
+
+            player = playerObj.transform;
+            playerStats = playerObj.GetComponent<CharacterStats>();
+            playerAnimator = playerObj.GetComponent<Animator>();
+
+            if (enableDebugLogs) Debug.Log($"✅ Player found:  {player.name} at {player.position}");
+        }
+        else
+        {
+            Debug.LogError("❌ Player NOT FOUND!");
         }
 
         // Battle Enemy verstecken
@@ -77,6 +101,7 @@ public class DungeonManager : MonoBehaviour
         }
 
         // Buttons sammeln
+        allButtons.Clear();
         if (button1 != null) allButtons.Add(button1);
         if (button2 != null) allButtons.Add(button2);
         if (button3 != null) allButtons.Add(button3);
@@ -93,25 +118,130 @@ public class DungeonManager : MonoBehaviour
             encounterPanel.SetActive(false);
         }
 
-        // Player zum Start Point bewegen
-        if (encounterPoints.Count > 0 && player != null)
-        {
-            player.position = encounterPoints[0].transform.position;
-            if (enableDebugLogs) Debug.Log($"Player at Start:  {encounterPoints[0].name}");
-        }
+        // PRÜFE OB WIR VOM SHOP ZURÜCKKEHREN
+        string dungeonState = PlayerPrefs.GetString("DungeonState", "");
 
-        // Starte Dungeon (überspringe Point 0 = Start)
-        currentPointIndex = 1;
-        MoveToNextPoint();
+        if (dungeonState == "AfterShop")
+        {
+            if (enableDebugLogs) Debug.Log("Returning from Shop - going to Boss!");
+
+            // Lösche State
+            PlayerPrefs.SetString("DungeonState", "");
+            PlayerPrefs.Save();
+
+            // Lade gespeicherte Shop Position
+            if (PlayerPrefs.HasKey("ShopPositionX") && player != null)
+            {
+                float x = PlayerPrefs.GetFloat("ShopPositionX");
+                float y = PlayerPrefs.GetFloat("ShopPositionY");
+                float z = PlayerPrefs.GetFloat("ShopPositionZ");
+
+                player.position = new Vector3(x, y, z);
+
+                if (enableDebugLogs) Debug.Log($"✅ Player positioned at saved Shop position:  {player.position}");
+
+                // Lösche gespeicherte Position
+                PlayerPrefs.DeleteKey("ShopPositionX");
+                PlayerPrefs.DeleteKey("ShopPositionY");
+                PlayerPrefs.DeleteKey("ShopPositionZ");
+            }
+            else
+            {
+                // Fallback wenn keine Position gespeichert
+                if (enableDebugLogs) Debug.LogWarning("⚠️ No saved Shop position, using fallback");
+
+                // Finde Choice Point
+                EncounterPoint choicePoint = null;
+                foreach (EncounterPoint point in encounterPoints)
+                {
+                    if (point.encounterType == EncounterType.Choice)
+                    {
+                        choicePoint = point;
+                        break;
+                    }
+                }
+
+                if (choicePoint != null && player != null)
+                {
+                    player.position = choicePoint.transform.position;
+                    if (enableDebugLogs) Debug.Log($"Player at Choice Point: {choicePoint.transform.position}");
+                }
+            }
+
+            if (player != null && enableDebugLogs)
+            {
+                Debug.Log($"Player position BEFORE GoToBoss: {player.position}");
+            }
+
+            // Gehe direkt zum Boss
+            GoToBoss();
+        }
+        else
+        {
+            // Normale Dungeon Start
+            // Player zum Start Point bewegen
+            if (encounterPoints.Count > 0 && player != null)
+            {
+                player.position = encounterPoints[0].transform.position;
+                if (enableDebugLogs) Debug.Log($"Player at Start:  {encounterPoints[0].name}");
+            }
+
+            // Starte Dungeon (überspringe Point 0 = Start)
+            currentPointIndex = 1;
+            MoveToNextPoint();
+        }
 
         if (enableDebugLogs) Debug.Log("===================================");
     }
 
     void Update()
     {
+        // WICHTIG:  Prüfe ob Player existiert, falls nicht -> finde neu
+        if (player == null)
+        {
+            GameObject playerObj = GameObject.FindGameObjectWithTag("Player");
+
+            // Falls nicht mit Tag gefunden, suche nach Namen
+            if (playerObj == null)
+            {
+                playerObj = GameObject.Find("Player");
+
+                if (playerObj != null)
+                {
+                    Debug.LogWarning($"⚠️ Found Player by name, fixing tag");
+                    playerObj.tag = "Player";
+                }
+            }
+
+            if (playerObj != null)
+            {
+                player = playerObj.transform;
+                playerStats = playerObj.GetComponent<CharacterStats>();
+                playerAnimator = playerObj.GetComponent<Animator>();
+
+                Debug.Log($"✅ Player refound in Update: {player.name} at {player.position}");
+            }
+            else
+            {
+                // Kein Player gefunden
+                if (isMoving)
+                {
+                    Debug.LogError("❌ isMoving=TRUE but player is NULL and can't be found!");
+                    isMoving = false;
+                }
+                return;
+            }
+        }
+
         // Player Movement
         if (isMoving && player != null)
         {
+            // DEBUG - Zeige Movement Info
+            if (enableDebugLogs && Time.frameCount % 30 == 0)
+            {
+                Debug.Log($"🏃 Moving: {player.position} → {targetPosition}, Distance: {Vector3.Distance(player.position, targetPosition):F2}");
+            }
+
             player.position = Vector3.MoveTowards(
                 player.position,
                 targetPosition,
@@ -128,6 +258,8 @@ public class DungeonManager : MonoBehaviour
                 {
                     playerAnimator.SetBool("isRunning", false);
                 }
+
+                if (enableDebugLogs) Debug.Log("✅ Reached target!");
 
                 OnReachedPoint();
             }
@@ -199,7 +331,7 @@ public class DungeonManager : MonoBehaviour
 
         if (!found)
         {
-            // Point ist NICHT in der Liste (z.B.  Chest/Shop bei Choice)
+            // Point ist NICHT in der Liste (z.B. Chest/Shop bei Choice)
             if (enableDebugLogs) Debug.Log($"{targetPoint.name} NOT in encounter list (choice path)");
             // Setze Index auf -1 damit CompleteEncounter() nicht automatisch weitergeht
             currentPointIndex = -1;
@@ -287,8 +419,9 @@ public class DungeonManager : MonoBehaviour
                 break;
 
             case EncounterType.Campfire:
-                ShowButton(0, "RASTEN", () => OnRest(point));
-                ShowButton(1, "WEITER", () => CompleteEncounter());
+                ShowButton(0, "HEILEN (+50 HP)", () => OnCampfireHeal());
+                ShowButton(1, "KRAFT (+2 ATK)", () => OnCampfireAttack());
+                ShowButton(2, "SCHUTZ (+2 DEF)", () => OnCampfireDefense());
                 break;
 
             case EncounterType.Choice:
@@ -371,11 +504,13 @@ public class DungeonManager : MonoBehaviour
     {
         if (enableDebugLogs) Debug.Log("========== BATTLE START ==========");
 
-        // Panel verstecken
+        // Encounter Panel verstecken
         if (encounterPanel != null)
         {
             encounterPanel.SetActive(false);
         }
+
+        HideAllButtons();
 
         // Hole Enemy Data
         if (point.enemyData == null)
@@ -400,6 +535,8 @@ public class DungeonManager : MonoBehaviour
                 enemyStats.defense = point.enemyData.defense;
                 enemyStats.xpReward = point.enemyData.xpReward;
                 enemyStats.gold = point.enemyData.goldReward;
+
+                if (enableDebugLogs) Debug.Log($"Enemy Stats: {enemyStats.characterName} HP:{enemyStats.maxHP} ATK:{enemyStats.attack}");
             }
 
             // Enemy Sprite setzen
@@ -409,25 +546,26 @@ public class DungeonManager : MonoBehaviour
                 enemySprite.sprite = point.enemyData.enemySprite;
             }
 
-            // Enemy Position (rechts neben Player)
+            // Enemy Position (rechts vom Player im Battle)
             if (player != null)
             {
-                battleEnemy.transform.position = player.position + new Vector3(3f, 0, 0);
+                Vector3 battlePos = player.position + new Vector3(3f, 0, 0);
+                battleEnemy.transform.position = battlePos;
+                if (enableDebugLogs) Debug.Log($"Enemy positioned at: {battlePos}");
             }
 
             // Enemy aktivieren
             battleEnemy.SetActive(true);
 
-            // Battle Panel öffnen
-            if (battlePanel != null)
-            {
-                battlePanel.SetActive(true);
-            }
-
-            // GameManager Battle starten
+            // GameManager Battle starten (WICHTIG!)
             if (GameManager.instance != null && enemyStats != null)
             {
+                if (enableDebugLogs) Debug.Log("Calling GameManager.TriggerEncounter.. .");
                 GameManager.instance.TriggerEncounter(enemyStats);
+            }
+            else
+            {
+                Debug.LogError("GameManager.instance is NULL!");
             }
         }
         else
@@ -479,12 +617,62 @@ public class DungeonManager : MonoBehaviour
     {
         if (enableDebugLogs) Debug.Log("========== CHEST OPENED ==========");
 
-        // Gebe Gold
+        // Zufälliges Gold (20-80)
+        int goldAmount = Random.Range(20, 81);
+
         if (GameManager.instance != null)
         {
-            GameManager.instance.AddGold(50);
+            GameManager.instance.AddGold(goldAmount);
             GameManager.instance.PlayCoinSound();
         }
+
+        if (enableDebugLogs) Debug.Log($"Found {goldAmount} Gold!");
+
+        // Chance auf Health Potion (20%)
+        bool foundPotion = Random.Range(0f, 1f) < 0.2f;
+
+        // Baue Reward Message
+        string rewardMessage = $"Du hast gefunden:\n\n{goldAmount} Gold";
+
+        if (foundPotion)
+        {
+            // Lade Heiltrank aus Resources
+            ShopItem potion = Resources.Load<ShopItem>("Heiltrank_Klein");
+
+            if (potion != null && PlayerInventory.instance != null)
+            {
+                PlayerInventory.instance.AddPotion(potion);
+                if (enableDebugLogs) Debug.Log($"Found {potion.itemName}!");
+                rewardMessage += $"\n{potion.itemName}";
+            }
+            else
+            {
+                if (enableDebugLogs) Debug.LogWarning("Heiltrank_Klein not found in Resources or PlayerInventory missing!");
+            }
+        }
+
+        // ZEIGE IM ENCOUNTER PANEL
+        if (encounterTitleText != null)
+        {
+            encounterTitleText.text = "GEOEFFNET! ";
+        }
+
+        if (encounterDescriptionText != null)
+        {
+            encounterDescriptionText.text = rewardMessage;
+        }
+
+        // Verstecke ÖFFNEN Button, zeige nur WEITER Button
+        HideAllButtons();
+        ShowButton(0, "WEITER", () => HideChestMessageAndContinue());
+
+        if (enableDebugLogs) Debug.Log($"Reward Message: {rewardMessage}");
+        if (enableDebugLogs) Debug.Log("==================================");
+    }
+
+    void HideChestMessageAndContinue()
+    {
+        if (enableDebugLogs) Debug.Log("Continuing to Boss.. .");
 
         // Panel verstecken
         if (encounterPanel != null)
@@ -496,8 +684,6 @@ public class DungeonManager : MonoBehaviour
 
         // Gehe direkt zum Boss
         GoToBoss();
-
-        if (enableDebugLogs) Debug.Log("==================================");
     }
 
     void OnShopEnter()
@@ -512,28 +698,126 @@ public class DungeonManager : MonoBehaviour
 
         HideAllButtons();
 
-        // Gehe direkt zum Boss
-        GoToBoss();
+        // Speichere aktuelle Player Position (Shop Position)
+        if (player != null)
+        {
+            PlayerPrefs.SetFloat("ShopPositionX", player.position.x);
+            PlayerPrefs.SetFloat("ShopPositionY", player.position.y);
+            PlayerPrefs.SetFloat("ShopPositionZ", player.position.z);
+
+            if (enableDebugLogs) Debug.Log($"Saved Shop Position: {player.position}");
+        }
+
+        // Speichere Dungeon State
+        PlayerPrefs.SetString("DungeonState", "AfterShop");
+        PlayerPrefs.Save();
+
+        // Gehe zu Marketplace Scene
+        SceneTransition sceneTransition = FindObjectOfType<SceneTransition>();
+        if (sceneTransition != null)
+        {
+            sceneTransition.GoToMarketplaceFromDungeon();
+        }
+        else
+        {
+            // Fallback:  Lade Scene direkt
+            if (enableDebugLogs) Debug.LogWarning("SceneTransition not found, loading Marketplace directly");
+            UnityEngine.SceneManagement.SceneManager.LoadScene("Marketplace");
+        }
 
         if (enableDebugLogs) Debug.Log("==================================");
     }
 
-    void OnRest(EncounterPoint point)
+    void OnCampfireHeal()
     {
-        if (enableDebugLogs) Debug.Log("Resting at campfire!");
+        if (enableDebugLogs) Debug.Log("========== CAMPFIRE:  HEAL ==========");
 
-        // Heile Player
+        int healAmount = 50;
+
         if (playerStats != null)
         {
-            playerStats.Heal(30);
+            int actualHeal = playerStats.Heal(healAmount);
+            if (enableDebugLogs) Debug.Log($"Healed {actualHeal} HP");
         }
 
+        // Update UI
         if (GameManager.instance != null)
         {
             GameManager.instance.UpdateUI();
         }
 
-        CompleteEncounter();
+        // Zeige Ergebnis
+        ShowCampfireResult($"Du ruhst dich aus.\n\nGeheilt: +{healAmount} HP");
+
+        if (enableDebugLogs) Debug.Log("====================================");
+    }
+
+    void OnCampfireAttack()
+    {
+        if (enableDebugLogs) Debug.Log("========== CAMPFIRE:  ATTACK ==========");
+
+        int attackBonus = 2;
+
+        if (playerStats != null)
+        {
+            playerStats.attack += attackBonus;
+            if (enableDebugLogs) Debug.Log($"Attack increased to {playerStats.attack}");
+        }
+
+        // Update UI
+        if (GameManager.instance != null)
+        {
+            GameManager.instance.UpdateUI();
+        }
+
+        // Zeige Ergebnis
+        ShowCampfireResult($"Du trainierst deine Kraft.\n\nAngriff:  +{attackBonus}");
+
+        if (enableDebugLogs) Debug.Log("======================================");
+    }
+
+    void OnCampfireDefense()
+    {
+        if (enableDebugLogs) Debug.Log("========== CAMPFIRE:  DEFENSE ==========");
+
+        int defenseBonus = 2;
+
+        if (playerStats != null)
+        {
+            playerStats.defense += defenseBonus;
+            if (enableDebugLogs) Debug.Log($"Defense increased to {playerStats.defense}");
+        }
+
+        // Update UI
+        if (GameManager.instance != null)
+        {
+            GameManager.instance.UpdateUI();
+        }
+
+        // Zeige Ergebnis
+        ShowCampfireResult($"Du staerkst deine Verteidigung.\n\nVerteidigung: +{defenseBonus}");
+
+        if (enableDebugLogs) Debug.Log("=======================================");
+    }
+
+    void ShowCampfireResult(string message)
+    {
+        if (enableDebugLogs) Debug.Log($"Campfire Result: {message}");
+
+        // Ändere Titel & Beschreibung
+        if (encounterTitleText != null)
+        {
+            encounterTitleText.text = "AUSGERUHT!";
+        }
+
+        if (encounterDescriptionText != null)
+        {
+            encounterDescriptionText.text = message;
+        }
+
+        // Verstecke alle Buttons, zeige nur WEITER
+        HideAllButtons();
+        ShowButton(0, "WEITER", () => CompleteEncounter());
     }
 
     void OnChoiceMade(EncounterPoint chosenPoint)
@@ -600,6 +884,8 @@ public class DungeonManager : MonoBehaviour
                 targetPosition = encounterPoints[i].transform.position;
                 isMoving = true;
 
+                if (enableDebugLogs) Debug.Log($"Target: {targetPosition}, isMoving: {isMoving}");
+
                 break;
             }
         }
@@ -657,7 +943,7 @@ public class DungeonManager : MonoBehaviour
             case EncounterType.Shop: return "HAENDLER!";
             case EncounterType.Campfire: return "LAGERFEUER!";
             case EncounterType.Choice: return "WAHL!";
-            case EncounterType.Mystery: return "GEHEIMNIS! ";
+            case EncounterType.Mystery: return "GEHEIMNIS!";
             default: return "??? ";
         }
     }
@@ -666,12 +952,12 @@ public class DungeonManager : MonoBehaviour
     {
         switch (type)
         {
-            case EncounterType.Enemy: return "Ein wilder Gegner erscheint!";
+            case EncounterType.Enemy: return "Ein wilder Gegner erscheint! ";
             case EncounterType.Elite: return "Ein maechtiger Gegner versperrt den Weg!";
             case EncounterType.Boss: return "Der Boss erwartet dich!";
             case EncounterType.Chest: return "Eine glaenzende Truhe! ";
             case EncounterType.Shop: return "Ein Haendler bietet Waren an. ";
-            case EncounterType.Campfire: return "Ein warmes Feuer zum Ausruhen.";
+            case EncounterType.Campfire: return "Ein warmes Feuer zum Ausruhen. ";
             case EncounterType.Choice: return "Waehle deinen Weg!";
             case EncounterType.Mystery: return "Was verbirgt sich hier?";
             default: return "... ";

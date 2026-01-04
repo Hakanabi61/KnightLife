@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5312a4b9d009f87468bff32c69a7efaa, type: 3}
   m_Name: Heiltrank_Klein
   m_EditorClassIdentifier: Assembly-CSharp::ShopItem
-  itemName: 
+  itemName: Heiltrank Klein
   icon: {fileID: 0}
   price: 50
   type: 0
